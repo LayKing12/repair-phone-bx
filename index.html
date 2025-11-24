@@ -213,7 +213,7 @@
     </div>
 
     <script>
-        // ⚠️ TON LIEN RENDER ICI
+        // ✅ TON LIEN RENDER OFFICIEL
         const API_URL = 'https://repair-phone-bx-1.onrender.com';
         
         let currentPrice = 0;
@@ -393,8 +393,12 @@
                 });
                 const data = await res.json();
                 if(data.url) window.location.href = data.url;
-                else { alert("Erreur Stripe"); btn.disabled = false; }
-            } catch (e) { alert("Erreur serveur"); btn.disabled = false; }
+                else { alert("Erreur Stripe: " + (data.error || "Inconnue")); btn.disabled = false; }
+            } catch (e) { 
+                console.error(e);
+                alert("Erreur serveur (Vérifiez la console)."); 
+                btn.disabled = false; 
+            }
         }
         
         const badWords = ["merde", "con", "sex", "salope", "pute", "raciste", "nazi", "hitler", "baiser", "cul", "idiot", "pd", "connard"];
