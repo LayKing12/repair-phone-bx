@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { randomUUID } from 'crypto'; // Pour le token secret utilisateur
+import { randomUUID } from 'crypto';
 
 dotenv.config();
 
@@ -25,35 +25,83 @@ const pool = new Pool({
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// DONNÉES INITIALES (Gardé pour le seed)
+// DONNÉES INITIALES (Backup)
 const INITIAL_PRODUCTS = [
     { category: 'ECO', model: 'iPhone X', price: 40, image: 'images/iphone-X-noir.jpg' },
-    // ... (Le reste de ta liste de produits reste identique, le script la connaît déjà)
+    { category: 'ECO', model: 'iPhone XS', price: 40, image: 'images/iphone-XS-.jpg' },
+    { category: 'ECO', model: 'iPhone XR', price: 45, image: 'images/apple-iphone-XR-.jpg' },
+    { category: 'ECO', model: 'iPhone XS Max', price: 45, image: 'images/apple-iphone-XSmax.jpg' },
+    { category: 'ECO', model: 'iPhone 11', price: 50, image: 'images/apple-iphone-11.jpg' },
+    { category: 'ECO', model: 'iPhone 11 Pro', price: 50, image: 'images/apple-iphone-11Pro.jpg' },
+    { category: 'PROMO', model: 'iPhone 11 Pro Max', price: 50, old_price: 60, image: 'images/iphone-11ProMax.jpg' },
+    { category: 'PROMO', model: 'iPhone 12', price: 50, old_price: 70, image: 'images/apple-iphone-12.jpg' },
+    { category: 'PROMO', model: 'iPhone 12 Mini', price: 50, old_price: 70, image: 'images/apple-iphone-12-mini.jpg' },
+    { category: 'PROMO', model: 'iPhone 12 Pro', price: 50, old_price: 75, image: 'images/apple-iphone-12Pro.jpg' },
+    { category: 'PROMO', model: 'iPhone 12 Pro Max', price: 50, old_price: 85, image: 'images/iphone-12ProMax.jpg' },
+    { category: 'PROMO', model: 'iPhone 13', price: 50, old_price: 80, image: 'images/apple-iphone-13.jpg' },
+    { category: 'PROMO', model: 'iPhone 13 Mini', price: 50, old_price: 75, image: 'images/apple-iphone-13-mini.jpg' },
+    { category: 'PROMO', model: 'iPhone 13 Pro', price: 50, old_price: 155, image: 'images/apple-iphone-13Pro.jpg' },
+    { category: 'PROMO', model: 'iPhone 14', price: 50, old_price: 80, image: 'images/apple-iphone-14.jpg' },
+    { category: 'PROMO', model: 'iPhone 14 Plus', price: 50, old_price: 90, image: 'images/apple-iphone-14-Plus.jpg' },
+    { category: 'PROMO', model: 'iPhone 14 Pro', price: 50, old_price: 155, image: 'images/apple-iphone-14Pro.jpg' },
+    { category: 'NORMAL', model: 'iPhone 13 Pro Max', price: 180, image: 'images/iphone-13ProMax.jpg' },
+    { category: 'NORMAL', model: 'iPhone 14 Pro Max', price: 180, image: 'images/iphone-14-pro-max.jpg' },
+    { category: 'OLED', model: 'iPhone 15', price: 75, image: 'images/iphone-15.jpg' },
+    { category: 'OLED', model: 'iPhone 15 Plus', price: 75, image: 'images/iphone-15Plus.jpg' },
+    { category: 'OLED', model: 'iPhone 15 Pro', price: 85, image: 'images/iphone-15Pro.jpg' },
+    { category: 'OLED', model: 'iPhone 15 Pro Max', price: 150, image: 'images/iphone-15ProMax.jpg' },
+    { category: 'OLED', model: 'iPhone 16', price: 100, image: 'images/iphone-16.jpg' },
+    { category: 'OLED', model: 'iPhone 16 Plus', price: 150, image: 'images/iphone-16Plus.jpg' },
+    { category: 'OLED', model: 'iPhone 16 E', price: 150, image: 'images/iphone-16E.jpg' },
+    { category: 'OLED', model: 'iPhone 16 Pro', price: 150, image: 'images/iphone-16Pro.jpg' },
+    { category: 'OLED', model: 'iPhone 16 Pro Max', price: 200, image: 'images/iphone-16ProMax.jpg' },
+    { category: 'BATTERIE', model: 'iPhone X', price: 40, image: 'images/iphone-X-noir.jpg' },
+    { category: 'BATTERIE', model: 'iPhone XS', price: 40, image: 'images/iphone-XS-.jpg' },
+    { category: 'BATTERIE', model: 'iPhone XR', price: 45, image: 'images/apple-iphone-XR-.jpg' },
+    { category: 'BATTERIE', model: 'iPhone XS Max', price: 45, image: 'images/apple-iphone-XSmax.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 11', price: 45, image: 'images/apple-iphone-11.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 11 Pro', price: 45, image: 'images/apple-iphone-11Pro.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 11 Pro Max', price: 55, image: 'images/iphone-11ProMax.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 12', price: 60, image: 'images/apple-iphone-12.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 12 Mini', price: 70, image: 'images/apple-iphone-12-mini.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 12 Pro', price: 60, image: 'images/apple-iphone-12Pro.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 12 Pro Max', price: 80, image: 'images/iphone-12ProMax.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 13', price: 80, image: 'images/apple-iphone-13.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 13 Mini', price: 80, image: 'images/apple-iphone-13-mini.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 13 Pro', price: 150, image: 'images/apple-iphone-13Pro.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 13 Pro Max', price: 170, image: 'images/iphone-13ProMax.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 14', price: 80, image: 'images/apple-iphone-14.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 14 Plus', price: 90, image: 'images/apple-iphone-14-Plus.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 14 Pro', price: 150, image: 'images/apple-iphone-14Pro.jpg' },
+    { category: 'BATTERIE', model: 'iPhone 14 Pro Max', price: 170, image: 'images/iphone-14-pro-max.jpg' }
 ];
 
-// --- INIT DB ---
+// --- INIT DB (VERSION CORRECTIVE) ---
 const initDB = async () => {
     try {
         await pool.query(`CREATE TABLE IF NOT EXISTS reservations_v5 (id SERIAL PRIMARY KEY, client_name TEXT, email TEXT, phone TEXT, service_type TEXT, date TEXT, total_price INTEGER, amount_paid INTEGER, payment_status TEXT DEFAULT 'pending');`);
-        
-        // MODIFICATION TABLE AVIS : Ajout de client_token
         await pool.query(`CREATE TABLE IF NOT EXISTS reviews (id SERIAL PRIMARY KEY, author TEXT, content TEXT, rating INTEGER, client_token TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
-        
         await pool.query(`CREATE TABLE IF NOT EXISTS analytics (id SERIAL PRIMARY KEY, type TEXT, page TEXT, source TEXT, device TEXT, target TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
-        
         await pool.query(`CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, category TEXT, model TEXT, price INTEGER, old_price INTEGER DEFAULT 0, image TEXT);`);
 
-        // Petite astuce : Si la colonne client_token n'existe pas (pour les anciens avis), on l'ajoute sans casser la base
-        try { await pool.query(`ALTER TABLE reviews ADD COLUMN client_token TEXT;`); } catch (e) { /* Colonne existe déjà */ }
-
+        // --- 🛠️ CORRECTION AUTOMATIQUE DE LA BASE DE DONNÉES 🛠️ ---
+        // Ces lignes vont ajouter les colonnes manquantes si la table existe déjà
+        try { await pool.query(`ALTER TABLE reviews ADD COLUMN client_token TEXT;`); } catch (e) { /* ignore si existe deja */ }
+        try { await pool.query(`ALTER TABLE reviews ADD COLUMN date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) { /* ignore si existe deja */ }
+        
         // Seed Produits si vide
         const check = await pool.query('SELECT COUNT(*) FROM products');
         if (parseInt(check.rows[0].count) === 0) {
             console.log("🌱 Base vide, insertion produits...");
-             // (Je raccourcis ici pour la lisibilité, mais le code complet d'avant fonctionne)
-             // Tu peux remettre ta boucle d'insertion ici si tu repars de zéro
+            for (const p of INITIAL_PRODUCTS) {
+                await pool.query(
+                    'INSERT INTO products (category, model, price, old_price, image) VALUES ($1, $2, $3, $4, $5)',
+                    [p.category, p.model, p.price, p.old_price || 0, p.image]
+                );
+            }
+            console.log("✅ Produits insérés !");
         }
-        console.log("✅ Base de données prête !");
+        console.log("✅ Base de données prête et corrigée !");
     } catch (err) { console.error("❌ Erreur DB", err); }
 };
 
@@ -68,33 +116,32 @@ app.put('/api/admin/products/:id', async (req, res) => {
     try { await pool.query('UPDATE products SET price = $1 WHERE id = $2', [price, req.params.id]); res.json({success: true}); } catch (e) { res.status(500).json({error: "Erreur"}); }
 });
 
-// --- ROUTES AVIS (MODIFIÉES) ---
+// --- ROUTES AVIS ---
 app.get('/reviews', async (req, res) => { 
-    // On envoie les avis du plus récent au plus vieux
-    const r = await pool.query('SELECT id, author, content, rating, date FROM reviews ORDER BY id DESC'); 
-    res.json(r.rows); 
+    try {
+        const r = await pool.query('SELECT id, author, content, rating, date, client_token FROM reviews ORDER BY id DESC'); 
+        res.json(r.rows); 
+    } catch (e) { res.json([]); } // Retourne vide si erreur
 });
 
 app.post('/reviews', async (req, res) => { 
-    const token = randomUUID(); // On crée un ticket secret unique
-    await pool.query('INSERT INTO reviews (author, content, rating, client_token) VALUES ($1, $2, $3, $4)', 
+    const token = randomUUID(); 
+    try {
+        await pool.query('INSERT INTO reviews (author, content, rating, client_token) VALUES ($1, $2, $3, $4)', 
         [req.body.author, req.body.content, req.body.rating, token]); 
-    res.json({ success: true, token: token }); // On renvoie le ticket au client
+        res.json({ success: true, token: token }); 
+    } catch (e) { res.status(500).json({error: "Erreur DB"}); }
 });
 
-// ROUTE SUPPRESSION (User avec Token OU Admin avec Password)
+// ROUTE SUPPRESSION
 app.delete('/reviews/:id', async (req, res) => {
     const { token, password } = req.body;
     const reviewId = req.params.id;
-
     try {
-        // 1. Est-ce l'Admin ?
         if (password === "MonCodeSecret123") {
             await pool.query('DELETE FROM reviews WHERE id = $1', [reviewId]);
             return res.json({ success: true, by: 'admin' });
         }
-
-        // 2. Est-ce l'Auteur (via token) ?
         if (token) {
             const check = await pool.query('SELECT * FROM reviews WHERE id = $1 AND client_token = $2', [reviewId, token]);
             if (check.rows.length > 0) {
@@ -102,11 +149,9 @@ app.delete('/reviews/:id', async (req, res) => {
                 return res.json({ success: true, by: 'author' });
             }
         }
-
-        res.status(403).json({ error: "Interdit: Mauvais token ou mot de passe" });
+        res.status(403).json({ error: "Interdit" });
     } catch (e) { res.status(500).json({ error: "Erreur serveur" }); }
 });
-
 
 // --- ROUTES ADMIN STATS ---
 app.post('/api/admin/stats', async (req, res) => {
@@ -117,7 +162,6 @@ app.post('/api/admin/stats', async (req, res) => {
         const todayVisits = await pool.query("SELECT COUNT(*) FROM analytics WHERE type='view' AND date >= CURRENT_DATE");
         const devices = await pool.query("SELECT device, COUNT(*) FROM analytics WHERE type='view' GROUP BY device");
         const clicks = await pool.query("SELECT target, COUNT(*) FROM analytics WHERE type='click' GROUP BY target");
-        // On renvoie aussi TOUS les avis pour la modération
         const allReviews = await pool.query("SELECT * FROM reviews ORDER BY id DESC");
 
         res.json({
@@ -125,18 +169,44 @@ app.post('/api/admin/stats', async (req, res) => {
             today: todayVisits.rows[0].count,
             devices: devices.rows,
             clicks: clicks.rows,
-            reviews: allReviews.rows // Ajouté pour l'admin
+            reviews: allReviews.rows
         });
     } catch (e) { res.status(500).json({error: e}); }
 });
 
-// --- TRACKING & PAIEMENT (Identique) ---
+// --- TRACKING & PAIEMENT ---
 app.post('/api/track', async (req, res) => {
     const { type, page, source, device, target } = req.body;
     try { await pool.query('INSERT INTO analytics (type, page, source, device, target) VALUES ($1, $2, $3, $4, $5)', [type, page, source, device, target]); res.json({ success: true }); } catch (e) { res.json({ success: false }); }
 });
-app.post('/create-checkout-session', async (req, res) => { /* ... Code Stripe précédent conservé ... */ });
-app.get('/success', async (req, res) => { /* ... Code Success précédent conservé ... */ });
+app.post('/create-checkout-session', async (req, res) => {
+    const { client_name, email, phone, service_type, date, price, payment_choice } = req.body;
+    const amountToPay = payment_choice === 'deposit' ? 1500 : price * 100; 
+    try {
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card', 'bancontact'],
+            line_items: [{
+                price_data: { currency: 'eur', product_data: { name: `Réparation: ${service_type}` }, unit_amount: amountToPay },
+                quantity: 1,
+            }],
+            mode: 'payment',
+            success_url: `${process.env.API_URL || 'https://repair-phone-bx-1.onrender.com'}/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.API_URL || 'https://repair-phone-bx-1.onrender.com'}/cancel`,
+            metadata: { client_name, email, phone, service_type, date, total_price: price, type: payment_choice }
+        });
+        res.json({ url: session.url });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.get('/success', async (req, res) => {
+    // Ta route success originale (raccourcie ici pour loger)
+    try {
+        const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+        const { client_name, email, phone, service_type, date, total_price, type } = session.metadata;
+        await pool.query(`INSERT INTO reservations_v5 (client_name, email, phone, service_type, date, total_price, amount_paid, payment_status) VALUES ($1, $2, $3, $4, $5, $6, $7, 'paid')`, [client_name, email, phone, service_type, date, total_price, (type==='deposit' ? 15 : total_price)]);
+        res.send(`<html><body><h1 style="color:green;text-align:center;margin-top:50px;">Paiement Réussi ! ✅</h1><p style="text-align:center;">Merci ${client_name}. Retournez au site.</p><div style="text-align:center"><a href="/">Retour au site</a></div></body></html>`);
+    } catch(e) { res.send("Erreur enregistrement."); }
+});
 app.get('/cancel', (req, res) => res.redirect('/'));
 
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, '../index.html')); });
