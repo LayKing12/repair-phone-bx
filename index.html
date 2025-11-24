@@ -2,9 +2,19 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repair Phone BX - Réparation iPhone</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>Repair Phone BX - Réparation iPhone Express à Bruxelles (1080)</title>
+    <meta name="description" content="Réparation d'écran et batterie iPhone en 30 minutes à Molenbeek (Ribaucourt). Prix imbattables dès 40€. Garantie incluse. Sans rendez-vous.">
+    
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://repair-phone-bx-1.onrender.com/">
+    <meta property="og:title" content="Réparation iPhone Express - Repair Phone BX">
+    <meta property="og:description" content="Écran cassé ? Batterie faible ? Réparation en 30 min devant vous. Dès 40€.">
+    <meta property="og:image" content="https://repair-phone-bx-1.onrender.com/images/iphone-13Pro.jpg">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📱</text></svg>">
     
     <style>
         :root { 
@@ -14,7 +24,7 @@
             --promo: #ff3b30; --eco: #34c759;
         }
         * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; margin: 0; color: var(--dark); background-color: var(--bg-body); scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; margin: 0; color: var(--dark); background-color: var(--bg-body); scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
         
         header { padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); z-index: 1000; border-bottom: 1px solid rgba(0,0,0,0.05); }
         .logo { font-size: 22px; font-weight: 700; color: var(--dark); }
@@ -53,7 +63,6 @@
         .badge-promo { background: var(--promo); color: white; }
         .badge-eco { background: var(--eco); color: white; }
         .badge-new { background: #0071e3; color: white; }
-        .badge-oled { background: black; color: white; }
         
         .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
         .card-title { font-size: 17px; font-weight: 600; margin: 0 0 6px 0; }
@@ -99,13 +108,15 @@
         .reviews-section { max-width: 1200px; margin: 60px auto; background: white; padding: 50px; border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
         .review-form input, .review-form textarea, .review-form select { border: 1px solid #d2d2d7; border-radius: 12px; padding: 12px; width: 100%; margin-bottom: 10px; font-family: inherit; }
         .review-item { border-bottom: 1px solid #eee; padding: 20px 0; position: relative; }
-        .review-options { position: absolute; top: 15px; right: 0; }
-        .dots-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #ccc; padding: 0 10px; }
-        .options-menu { display: none; position: absolute; right: 0; top: 30px; background: white; border: 1px solid #eee; border-radius: 12px; box-shadow: var(--shadow-hover); z-index: 10; width: 140px; }
-        .options-menu button { display: block; width: 100%; text-align: left; padding: 12px 15px; background: none; border: none; cursor: pointer; font-size: 13px; }
-        .btn-delete { color: #ff3b30; }
-
-        @media (max-width: 768px) { .container { flex-direction: column; padding: 15px; } .sidebar { display: none; } .modal { width: 90%; padding: 25px; } .grid { grid-template-columns: 1fr; } }
+        
+        /* FIX MOBILE IOS ZOOM */
+        @media screen and (max-width: 768px) {
+            .container { flex-direction: column; padding: 15px; } 
+            .sidebar { display: none; } 
+            .modal { width: 90%; padding: 25px; } 
+            .grid { grid-template-columns: 1fr; }
+            input, select, textarea { font-size: 16px !important; } /* Empêche le zoom auto */
+        }
     </style>
 </head>
 <body>
@@ -191,10 +202,23 @@
     <div class="modal-overlay" id="legalModal">
         <div class="modal modal-large">
             <button onclick="document.getElementById('legalModal').style.display='none'" style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:24px; cursor:pointer;">×</button>
-            <h2>Mentions Légales</h2>
-            <div style="font-size:14px; line-height:1.6; color:#555;">
-                <p><strong>1. Éditeur</strong><br>Repair Phone BX<br>Ribaucourt, 1080 Molenbeek</p>
-                <p><strong>2. Paiement</strong><br>Sécurisé par Stripe.</p>
+            <h2>Conditions Générales de Vente (CGV)</h2>
+            <div style="font-size:13px; line-height:1.6; color:#555; text-align: justify;">
+                <p><strong>1. Éditeur du service</strong><br>
+                Repair Phone BX - Service de réparation de téléphonie mobile.<br>
+                Situé à : Ribaucourt, 1080 Molenbeek-Saint-Jean.</p>
+
+                <p><strong>2. Garantie des réparations</strong><br>
+                Nos réparations (écrans et batteries) sont garanties <strong>6 mois</strong> hors casse, oxydation ou mauvaise utilisation. La garantie couvre uniquement la pièce remplacée.</p>
+
+                <p><strong>3. Données personnelles</strong><br>
+                Le client est tenu d'effectuer une sauvegarde de ses données avant toute intervention. Repair Phone BX ne pourra être tenu responsable en cas de perte de données.</p>
+
+                <p><strong>4. Paiement & Acompte</strong><br>
+                L'acompte de 15€ versé en ligne via Stripe permet de réserver la pièce et le créneau. Le solde est dû sur place après vérification du bon fonctionnement de l'appareil. En cas d'annulation moins de 24h avant, l'acompte n'est pas remboursable.</p>
+
+                <p><strong>5. Appareils non réclamés</strong><br>
+                Tout appareil non réclamé dans un délai de 90 jours après réparation sera considéré comme abandonné et pourra être recyclé.</p>
             </div>
         </div>
     </div>
@@ -233,7 +257,6 @@
     </div>
 
     <script>
-        // ⚠️ TON LIEN RENDER ICI
         const API_URL = 'https://repair-phone-bx-1.onrender.com';
         
         let currentPrice = 0;
@@ -243,7 +266,7 @@
         const techLCD = `<strong>Norme :</strong> Écran LCD LTPS (Qualité/Prix)<br><strong>Solidité :</strong> Verre renforcé.<br><strong>Couleurs :</strong> Gamut P3 vives.<br><strong>Réactivité :</strong> Tactile fluide.`;
         const techOLED = `<strong>Technologie :</strong> Écran COMPATIBLE OLED<br><strong>Qualité :</strong> Affichage exceptionnel d'origine.`;
 
-        // --- 1. GAMME ECO (Prix PDF, pas de promo) ---
+        // --- 1. GAMME ECO ---
         const ecoModels = [
             {m: "iPhone X", p: 40, img: "images/iphone-X-noir.jpg"}, 
             {m: "iPhone XS", p: 40, img: "images/iphone-XS-.jpg"},
@@ -253,7 +276,7 @@
             {m: "iPhone 11 Pro", p: 50, img: "images/apple-iphone-11Pro.jpg"}
         ];
 
-        // --- 2. LA VRAIE PROMO (Prix barré -> 50€) ---
+        // --- 2. PROMO FLASH (50€) ---
         const promoModels = [
             {m: "iPhone 11 Pro Max", old: 60, img: "images/iphone-11ProMax.jpg"},
             {m: "iPhone 12", old: 70, img: "images/apple-iphone-12.jpg"}, 
@@ -268,7 +291,7 @@
             {m: "iPhone 14 Pro", old: 155, img: "images/apple-iphone-14Pro.jpg"}
         ];
 
-        // --- 3. HORS PROMO (13PM, 14PM) ---
+        // --- 3. HORS PROMO ---
         const horsPromo = [
             {m: "iPhone 13 Pro Max", p: 180, type: "LCD", img: "images/iphone-13ProMax.jpg"},
             {m: "iPhone 14 Pro Max", p: 180, type: "LCD", img: "images/iphone-14-pro-max.jpg"}
@@ -333,7 +356,7 @@
             <div class="card">
                 <div class="card-img-container">
                     ${badge}
-                    <img src="${item.img}" class="card-img" alt="${item.m}">
+                    <img src="${item.img}" class="card-img" alt="${item.m}" loading="lazy">
                 </div>
                 <div class="card-body">
                     <div class="card-title">${serviceName}</div>
@@ -377,7 +400,6 @@
             document.getElementById('selectedServiceDisplay').innerText = service;
             document.getElementById('fullPriceBtn').innerText = price + " €";
             
-            // Reset option
             paymentChoice = 'deposit';
             document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('active'));
             document.querySelector('.payment-option:first-child').classList.add('active');
@@ -449,7 +471,7 @@
             document.getElementById('reviews-display').innerHTML = reviews.map(r=>`<div class="review-item"><b>${r.author}</b> ${'⭐'.repeat(r.rating)}<p>${r.content}</p></div>`).join('');
         });
 
-        // --- 1. TRACKER LA VISITE (PAGE VIEW) ---
+        // TRACKING
         const urlParams = new URLSearchParams(window.location.search);
         const source = urlParams.get('src') || document.referrer || 'direct';
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'Mobile' : 'PC';
@@ -460,7 +482,6 @@
             body: JSON.stringify({ type: 'view', page: 'home', source: source, device: isMobile, target: null })
         });
 
-        // --- 2. TRACKER LES CLICS ---
         function trackClick(targetName) {
             fetch(API_URL + '/api/track', {
                 method: 'POST',
@@ -469,7 +490,6 @@
             });
         }
 
-        // Attacher les événements
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('contactBtn').addEventListener('click', () => trackClick('contact_header'));
             document.body.addEventListener('click', (e) => {
@@ -481,9 +501,36 @@
     </script>
 
     <footer style="text-align:center; padding:30px; color:#999; font-size:12px; border-top:1px solid #eee;">
-        © 2025 Repair Phone BX • <a href="#" onclick="document.getElementById('legalModal').style.display='flex';return false;" style="color:#999">Mentions Légales</a>
+        © 2025 Repair Phone BX • <a href="#" onclick="document.getElementById('legalModal').style.display='flex';return false;" style="color:#999">Mentions Légales & CGV</a>
         <br><br>
         <a href="/admin-secret-dashboard" style="color: #eee; text-decoration: none;">Admin</a>
     </footer>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "Repair Phone BX",
+      "image": "https://repair-phone-bx-1.onrender.com/images/iphone-13.jpg",
+      "telephone": "0467791737",
+      "email": "aliouking.14@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Quartier Ribaucourt",
+        "addressLocality": "Molenbeek-Saint-Jean",
+        "postalCode": "1080",
+        "addressCountry": "BE"
+      },
+      "priceRange": "€€",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "opens": "10:00",
+          "closes": "19:00"
+        }
+      ]
+    }
+    </script>
 </body>
 </html>
