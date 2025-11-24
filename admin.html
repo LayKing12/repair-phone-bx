@@ -9,42 +9,31 @@
         :root { --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --primary: #ff5c39; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         
-        /* LOGIN MODAL */
         #loginModal { position: fixed; top:0; left:0; width:100%; height:100%; background: #111; display: flex; justify-content: center; align-items: center; z-index: 999; }
         .login-box { background: white; padding: 30px; border-radius: 12px; text-align: center; width: 300px; }
         .login-box input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; }
         .login-box button { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-        /* DASHBOARD */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        h1 { margin: 0; }
-        .refresh-btn { background: white; border: 1px solid #ddd; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; border: none; background: white; border-radius: 8px; cursor: pointer; font-weight: 600; color: #666; }
+        .tab-btn.active { background: var(--primary); color: white; }
 
-        /* KPI CARDS */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .card h3 { margin: 0 0 10px 0; font-size: 14px; color: #6b7280; text-transform: uppercase; }
         .card .value { font-size: 32px; font-weight: 700; color: var(--primary); }
 
-        /* GRAPHS & DETAILS */
-        .details-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        @media(max-width: 768px) { .details-grid { grid-template-columns: 1fr; } }
-        
-        .chart-container { background: white; padding: 20px; border-radius: 12px; height: 300px; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 40px; position: relative; }
-        
-        /* Barres du graphique CSS simple */
-        .bar-group { display: flex; flex-direction: column; align-items: center; width: 10%; height: 100%; justify-content: flex-end; }
-        .bar { width: 100%; background: var(--primary); border-radius: 4px 4px 0 0; transition: height 0.5s; min-height: 4px; }
-        .bar-label { margin-top: 10px; font-size: 12px; color: #666; }
+        .product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .product-info { font-size: 14px; }
+        .product-price-input { width: 60px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        .btn-save { background: #34c759; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
-        .list-group { list-style: none; padding: 0; margin: 0; }
-        .list-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .list-item:last-child { border: none; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- SÉCURITÉ (Mot de passe) -->
     <div id="loginModal">
         <div class="login-box">
             <h2>🔐 Accès Admin</h2>
@@ -54,45 +43,34 @@
         </div>
     </div>
 
-    <!-- CONTENU -->
-    <div id="dashboard" style="display:none;">
+    <div id="dashboard" class="hidden">
         <div class="header">
-            <h1>📊 Statistiques Repair Phone</h1>
-            <button class="refresh-btn" onclick="loadData()">🔄 Actualiser</button>
+            <h1>📊 Dashboard</h1>
+            <button onclick="location.reload()">🔄</button>
         </div>
 
-        <!-- KPI -->
-        <div class="kpi-grid">
-            <div class="card">
-                <h3>Visites Aujourd'hui</h3>
-                <div class="value" id="val-today">0</div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('stats')">Statistiques</button>
+            <button class="tab-btn" onclick="switchTab('products')">📦 Produits & Prix</button>
+        </div>
+
+        <div id="tab-stats">
+            <div class="kpi-grid">
+                <div class="card"><h3>Visites Aujourd'hui</h3><div class="value" id="val-today">0</div></div>
+                <div class="card"><h3>Visites Totales</h3><div class="value" id="val-total">0</div></div>
+                <div class="card"><h3>Clics Réservation</h3><div class="value" id="val-clicks">0</div></div>
             </div>
             <div class="card">
-                <h3>Visites Totales</h3>
-                <div class="value" id="val-total">0</div>
-            </div>
-            <div class="card">
-                <h3>Clics Réservation</h3>
-                <div class="value" id="val-clicks">0</div>
+                <h3>Appareils Populaires</h3>
+                <ul id="device-list" style="padding-left:20px; line-height:1.8;"></ul>
             </div>
         </div>
 
-        <div class="details-grid">
-            <!-- GRAPHIQUE 7 JOURS -->
+        <div id="tab-products" class="hidden">
             <div class="card">
-                <h3>Trafic des 7 derniers jours</h3>
-                <div class="chart-container" id="chart-container">
-                    <!-- Les barres seront générées ici par JS -->
-                    Loading graph...
-                </div>
-            </div>
-
-            <!-- APPAREILS -->
-            <div class="card">
-                <h3>Appareils & Interactions</h3>
-                <ul class="list-group" id="device-list">
-                    <!-- Liste générée par JS -->
-                </ul>
+                <h3>Gestion des Prix</h3>
+                <p style="font-size:12px; color:#666; margin-bottom:20px;">Modifiez le prix et cliquez sur "OK" pour sauvegarder.</p>
+                <div id="products-list">Chargement...</div>
             </div>
         </div>
     </div>
@@ -100,14 +78,10 @@
     <script>
         let token = null;
 
-        // 1. LOGIN
         async function login() {
             const pass = document.getElementById('passwordInput').value;
-            
-            // On teste le mot de passe en demandant les stats
             const res = await fetch('/api/admin/stats', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: pass })
             });
 
@@ -116,63 +90,64 @@
                 document.getElementById('loginModal').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
                 const data = await res.json();
-                renderDashboard(data);
+                renderStats(data);
+                loadProducts();
             } else {
                 document.getElementById('errorMsg').style.display = 'block';
             }
         }
 
-        // 2. CHARGER ET AFFICHER
-        async function loadData() {
-            if(!token) return;
-            const res = await fetch('/api/admin/stats', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: token })
-            });
-            const data = await res.json();
-            renderDashboard(data);
+        function switchTab(tab) {
+            document.getElementById('tab-stats').classList.add('hidden');
+            document.getElementById('tab-products').classList.add('hidden');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            event.target.classList.add('active');
         }
 
-        function renderDashboard(data) {
-            // KPI
+        function renderStats(data) {
             document.getElementById('val-total').innerText = data.total;
             document.getElementById('val-today').innerText = data.today;
             
-            // Clics totaux
             let totalClicks = 0;
             data.clicks.forEach(c => totalClicks += parseInt(c.count));
             document.getElementById('val-clicks').innerText = totalClicks;
 
-            // GRAPHIQUE BARRES (CSS)
-            const chartDiv = document.getElementById('chart-container');
-            chartDiv.innerHTML = '';
-            
-            // Trouver le max pour l'échelle
-            let maxVal = 0;
-            data.chart.forEach(d => { if(parseInt(d.count) > maxVal) maxVal = parseInt(d.count); });
-            if(maxVal === 0) maxVal = 1;
-
-            data.chart.forEach(day => {
-                const height = (day.count / maxVal) * 80; // 80% max height
-                chartDiv.innerHTML += `
-                    <div class="bar-group">
-                        <div style="font-weight:bold; font-size:10px; margin-bottom:5px;">${day.count}</div>
-                        <div class="bar" style="height: ${height}%;"></div>
-                        <div class="bar-label">${day.day}</div>
-                    </div>
-                `;
-            });
-
-            // LISTE APPAREILS
             const list = document.getElementById('device-list');
             list.innerHTML = '';
-            data.devices.forEach(dev => {
-                list.innerHTML += `<li class="list-item"><span>📱 ${dev.device}</span> <strong>${dev.count}</strong></li>`;
+            data.devices.forEach(dev => list.innerHTML += `<li>${dev.device}: <b>${dev.count}</b></li>`);
+        }
+
+        async function loadProducts() {
+            const res = await fetch('/api/products');
+            const products = await res.json();
+            const container = document.getElementById('products-list');
+            container.innerHTML = '';
+
+            products.forEach(p => {
+                container.innerHTML += `
+                <div class="product-item">
+                    <div class="product-info">
+                        <strong>${p.model}</strong> <span style="font-size:10px; background:#eee; padding:2px 5px; border-radius:4px;">${p.category}</span>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" value="${p.price}" class="product-price-input" id="price-${p.id}">
+                        <button class="btn-save" onclick="updatePrice(${p.id})">OK</button>
+                    </div>
+                </div>`;
             });
-            data.clicks.forEach(clk => {
-                list.innerHTML += `<li class="list-item"><span>👆 ${clk.target}</span> <strong>${clk.count}</strong></li>`;
+        }
+
+        async function updatePrice(id) {
+            const newPrice = document.getElementById(`price-${id}`).value;
+            const res = await fetch(`/api/admin/products/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: token, price: newPrice })
             });
+            if(res.ok) alert("Prix mis à jour ! ✅");
+            else alert("Erreur ❌");
         }
     </script>
 </body>

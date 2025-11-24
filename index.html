@@ -157,7 +157,9 @@
         <div class="services-list">
 
             <h2 class="category-title" id="eco">GAMME ÉCO (Petits Prix)</h2>
-            <div id="eco-grid" class="grid"></div>
+            <div id="eco-grid" class="grid">
+                <p style="color:#999; padding:20px;">Chargement des produits...</p>
+            </div>
 
             <h2 class="category-title" id="promo">PROMO FLASH 50€</h2>
             <div id="promo-grid" class="grid"></div>
@@ -266,71 +268,14 @@
         const techLCD = `<strong>Norme :</strong> Écran LCD LTPS (Qualité/Prix)<br><strong>Solidité :</strong> Verre renforcé.<br><strong>Couleurs :</strong> Gamut P3 vives.<br><strong>Réactivité :</strong> Tactile fluide.`;
         const techOLED = `<strong>Technologie :</strong> Écran COMPATIBLE OLED<br><strong>Qualité :</strong> Affichage exceptionnel d'origine.`;
 
-        // --- 1. GAMME ECO ---
-        const ecoModels = [
-            {m: "iPhone X", p: 40, img: "images/iphone-X-noir.jpg"}, 
-            {m: "iPhone XS", p: 40, img: "images/iphone-XS-.jpg"},
-            {m: "iPhone XR", p: 45, img: "images/apple-iphone-XR-.jpg"},
-            {m: "iPhone XS Max", p: 45, img: "images/apple-iphone-XSmax.jpg"},
-            {m: "iPhone 11", p: 50, img: "images/apple-iphone-11.jpg"}, 
-            {m: "iPhone 11 Pro", p: 50, img: "images/apple-iphone-11Pro.jpg"}
-        ];
-
-        // --- 2. PROMO FLASH (50€) ---
-        const promoModels = [
-            {m: "iPhone 11 Pro Max", old: 60, img: "images/iphone-11ProMax.jpg"},
-            {m: "iPhone 12", old: 70, img: "images/apple-iphone-12.jpg"}, 
-            {m: "iPhone 12 Mini", old: 70, img: "images/apple-iphone-12-mini.jpg"}, 
-            {m: "iPhone 12 Pro", old: 75, img: "images/apple-iphone-12Pro.jpg"}, 
-            {m: "iPhone 12 Pro Max", old: 85, img: "images/iphone-12ProMax.jpg"},
-            {m: "iPhone 13", old: 80, img: "images/apple-iphone-13.jpg"}, 
-            {m: "iPhone 13 Mini", old: 75, img: "images/apple-iphone-13-mini.jpg"}, 
-            {m: "iPhone 13 Pro", old: 155, img: "images/apple-iphone-13Pro.jpg"}, 
-            {m: "iPhone 14", old: 80, img: "images/apple-iphone-14.jpg"}, 
-            {m: "iPhone 14 Plus", old: 90, img: "images/apple-iphone-14-Plus.jpg"}, 
-            {m: "iPhone 14 Pro", old: 155, img: "images/apple-iphone-14Pro.jpg"}
-        ];
-
-        // --- 3. HORS PROMO ---
-        const horsPromo = [
-            {m: "iPhone 13 Pro Max", p: 180, type: "LCD", img: "images/iphone-13ProMax.jpg"},
-            {m: "iPhone 14 Pro Max", p: 180, type: "LCD", img: "images/iphone-14-pro-max.jpg"}
-        ];
-
-        // --- 4. OLED (15, 16) ---
-        const oledModels = [
-            {m: "iPhone 15", p: 75, type: "OLED", img: "images/iphone-15.jpg"},
-            {m: "iPhone 15 Plus", p: 75, type: "OLED", img: "images/iphone-15Plus.jpg"},
-            {m: "iPhone 15 Pro", p: 85, type: "OLED", img: "images/iphone-15Pro.jpg"},
-            {m: "iPhone 15 Pro Max", p: 150, type: "OLED", img: "images/iphone-15ProMax.jpg"},
-            {m: "iPhone 16", p: 100, type: "OLED", img: "images/iphone-16.jpg"},
-            {m: "iPhone 16 Plus", p: 150, type: "OLED", img: "images/iphone-16Plus.jpg"},
-            {m: "iPhone 16 E", p: 150, type: "OLED", img: "images/iphone-16E.jpg"},
-            {m: "iPhone 16 Pro", p: 150, type: "OLED", img: "images/iphone-16Pro.jpg"},
-            {m: "iPhone 16 Pro Max", p: 200, type: "OLED", img: "images/iphone-16ProMax.jpg"}
-        ];
-
-        // --- 5. BATTERIES ---
-        const batteries = [
-            { m: "iPhone X", p: 40, img: "images/iphone-X-noir.jpg" }, { m: "iPhone XS", p: 40, img: "images/iphone-XS-.jpg" },
-            { m: "iPhone XR", p: 45, img: "images/apple-iphone-XR-.jpg" }, { m: "iPhone XS Max", p: 45, img: "images/apple-iphone-XSmax.jpg" }, 
-            { m: "iPhone 11", p: 45, img: "images/apple-iphone-11.jpg" }, { m: "iPhone 11 Pro", p: 45, img: "images/apple-iphone-11Pro.jpg" }, 
-            { m: "iPhone 11 Pro Max", p: 55, img: "images/iphone-11ProMax.jpg" }, { m: "iPhone 12", p: 60, img: "images/apple-iphone-12.jpg" }, 
-            { m: "iPhone 12 Mini", p: 70, img: "images/apple-iphone-12-mini.jpg" }, { m: "iPhone 12 Pro", p: 60, img: "images/apple-iphone-12Pro.jpg" }, 
-            { m: "iPhone 12 Pro Max", p: 80, img: "images/iphone-12ProMax.jpg" }, { m: "iPhone 13", p: 80, img: "images/apple-iphone-13.jpg" }, 
-            { m: "iPhone 13 Mini", p: 80, img: "images/apple-iphone-13-mini.jpg" }, { m: "iPhone 13 Pro", p: 150, img: "images/apple-iphone-13Pro.jpg" }, 
-            { m: "iPhone 13 Pro Max", p: 170, img: "images/iphone-13ProMax.jpg" }, { m: "iPhone 14", p: 80, img: "images/apple-iphone-14.jpg" }, 
-            { m: "iPhone 14 Plus", p: 90, img: "images/apple-iphone-14-Plus.jpg" }, { m: "iPhone 14 Pro", p: 150, img: "images/apple-iphone-14Pro.jpg" }, 
-            { m: "iPhone 14 Pro Max", p: 170, img: "images/iphone-14-pro-max.jpg" }
-        ];
-
         // GENERATION HTML
-        function createCard(item, type) {
+        function createCard(item) {
             let badge = "", oldPriceHtml = "", desc = "", tech = "";
-            
+            let type = item.category; // ECO, PROMO, NORMAL, OLED, BATTERIE
+
             if (type === "PROMO") {
                 badge = `<div class="badge badge-promo">-50%</div>`;
-                oldPriceHtml = `<span class="price-old">${item.old}€</span>`;
+                oldPriceHtml = `<span class="price-old">${item.old_price}€</span>`;
                 desc = "Remplacement Écran LCD";
                 tech = techLCD;
             } else if (type === "ECO") {
@@ -349,14 +294,14 @@
                 desc = "Batterie neuve haute capacité";
             }
 
-            let price = type === "PROMO" ? 50 : item.p;
-            let serviceName = type === "BATTERIE" ? `${item.m} - Batterie` : `${item.m} - Écran`;
+            let price = item.price;
+            let serviceName = type === "BATTERIE" ? `${item.model} - Batterie` : `${item.model} - Écran`;
             
             return `
             <div class="card">
                 <div class="card-img-container">
                     ${badge}
-                    <img src="${item.img}" class="card-img" alt="${item.m}" loading="lazy">
+                    <img src="${item.image}" class="card-img" alt="${item.model}" loading="lazy">
                 </div>
                 <div class="card-body">
                     <div class="card-title">${serviceName}</div>
@@ -371,11 +316,34 @@
             </div>`;
         }
 
-        document.getElementById('eco-grid').innerHTML = ecoModels.map(i => createCard(i, "ECO")).join('');
-        document.getElementById('promo-grid').innerHTML = promoModels.map(i => createCard(i, "PROMO")).join('');
-        document.getElementById('normal-grid').innerHTML = horsPromo.map(i => createCard(i, "NORMAL")).join('');
-        document.getElementById('oled-grid').innerHTML = oledModels.map(i => createCard(i, "OLED")).join('');
-        document.getElementById('battery-grid').innerHTML = batteries.map(i => createCard(i, "BATTERIE")).join('');
+        // --- CHARGEMENT DYNAMIQUE DES PRODUITS ---
+        async function loadProducts() {
+            try {
+                const res = await fetch(API_URL + '/api/products');
+                const products = await res.json();
+
+                // Filtrer par catégorie
+                const eco = products.filter(p => p.category === 'ECO');
+                const promo = products.filter(p => p.category === 'PROMO');
+                const normal = products.filter(p => p.category === 'NORMAL');
+                const oled = products.filter(p => p.category === 'OLED');
+                const batt = products.filter(p => p.category === 'BATTERIE');
+
+                document.getElementById('eco-grid').innerHTML = eco.map(createCard).join('');
+                document.getElementById('promo-grid').innerHTML = promo.map(createCard).join('');
+                document.getElementById('normal-grid').innerHTML = normal.map(createCard).join('');
+                document.getElementById('oled-grid').innerHTML = oled.map(createCard).join('');
+                document.getElementById('battery-grid').innerHTML = batt.map(createCard).join('');
+                
+                window.allProductsLoaded = true;
+            } catch (e) {
+                console.error("Erreur chargement produits", e);
+                document.querySelector('.services-list').innerHTML = "<p style='text-align:center; padding:50px; color:red;'>Erreur de chargement des produits. Rechargez la page.</p>";
+            }
+        }
+
+        // Lancer le chargement au démarrage
+        loadProducts();
 
         function filterServices() {
             const query = document.getElementById('searchInput').value.toLowerCase();
