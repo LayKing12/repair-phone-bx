@@ -156,7 +156,7 @@
 
         <div class="services-list">
 
-            <h2 class="category-title" id="eco">GAMME ÉCO (Petits Prix)</h2>
+            <h2 class="category-title" id="eco">ECO</h2>
             <div id="eco-grid" class="grid">
                 <p style="color:#999; padding:20px;">Chargement des produits...</p>
             </div>
@@ -268,10 +268,10 @@
         const techLCD = `<strong>Norme :</strong> Écran LCD LTPS (Qualité/Prix)<br><strong>Solidité :</strong> Verre renforcé.<br><strong>Couleurs :</strong> Gamut P3 vives.<br><strong>Réactivité :</strong> Tactile fluide.`;
         const techOLED = `<strong>Technologie :</strong> Écran COMPATIBLE OLED<br><strong>Qualité :</strong> Affichage exceptionnel d'origine.`;
 
-        // GENERATION HTML
+        // GENERATION HTML DES CARTES
         function createCard(item) {
             let badge = "", oldPriceHtml = "", desc = "", tech = "";
-            let type = item.category; // ECO, PROMO, NORMAL, OLED, BATTERIE
+            let type = item.category;
 
             if (type === "PROMO") {
                 badge = `<div class="badge badge-promo">-50%</div>`;
@@ -338,11 +338,11 @@
                 window.allProductsLoaded = true;
             } catch (e) {
                 console.error("Erreur chargement produits", e);
-                document.querySelector('.services-list').innerHTML = "<p style='text-align:center; padding:50px; color:red;'>Erreur de chargement des produits. Rechargez la page.</p>";
+                document.querySelector('.services-list').innerHTML = "<p style='text-align:center; padding:50px; color:#999;'>Chargement en cours... (Le serveur se réveille)</p>";
+                setTimeout(loadProducts, 3000); 
             }
         }
 
-        // Lancer le chargement au démarrage
         loadProducts();
 
         function filterServices() {
@@ -444,7 +444,6 @@
                 const data = await res.json();
                 
                 if(data.success && data.token) {
-                    // SAUVEGARDE DU TOKEN DANS LE NAVIGATEUR (IMPORTANT POUR POUVOIR SUPPRIMER)
                     localStorage.setItem('lastReviewToken', data.token);
                     alert("Avis publié ! Merci.");
                     location.reload();
@@ -452,19 +451,14 @@
             } catch(e) { alert("Erreur connexion"); }
         }
 
-        // CHARGEMENT DES AVIS
+        // CHARGEMENT DES AVIS AVEC BOUTON SUPPRIMER SI C'EST MON AVIS
         fetch(API_URL+'/reviews').then(r=>r.json()).then(reviews => {
             const container = document.getElementById('reviews-display');
-            const myToken = localStorage.getItem('lastReviewToken'); // Le token de l'utilisateur actuel
+            const myToken = localStorage.getItem('lastReviewToken'); 
 
             container.innerHTML = reviews.map(r => {
-                // Si l'utilisateur a le token qui correspond à cet avis (c'est le sien)
                 const isMine = (myToken && r.client_token === myToken);
-                
-                let deleteBtn = '';
-                if(isMine) {
-                    deleteBtn = `<button onclick="deleteMyReview(${r.id}, '${r.client_token}')" style="background:none; border:none; color:#ff3b30; font-size:12px; cursor:pointer; float:right;">🗑️ Supprimer mon avis</button>`;
-                }
+                let deleteBtn = isMine ? `<button onclick="deleteMyReview(${r.id}, '${r.client_token}')" style="background:none; border:none; color:#ff3b30; font-size:12px; cursor:pointer; float:right;">🗑️ Supprimer mon avis</button>` : '';
 
                 return `
                 <div class="review-item">
@@ -475,16 +469,15 @@
             }).join('');
         });
 
-        // FONCTION POUR SUPPRIMER SON PROPRE AVIS
         async function deleteMyReview(id, token) {
             if(!confirm("Supprimer votre avis ?")) return;
             const res = await fetch(API_URL + '/reviews/' + id, {
                 method: 'DELETE',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ token: token }) // On envoie le token pour prouver qu'on est l'auteur
+                body: JSON.stringify({ token: token })
             });
             if(res.ok) location.reload();
-            else alert("Impossible de supprimer (Token expiré ou invalide)");
+            else alert("Impossible de supprimer");
         }
 
         // TRACKING
