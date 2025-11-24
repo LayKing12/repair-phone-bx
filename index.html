@@ -425,19 +425,67 @@
             } catch (e) { alert("Erreur serveur"); btn.disabled=false; }
         }
 
-        const badWords = ["merde", "con", "salope", "pute"];
+        const badWords = ["merde", "con", "salope", "pute", "connard"];
+
         async function submitReview() {
             const n = document.getElementById('reviewName').value;
             const c = document.getElementById('reviewContent').value;
             const r = document.getElementById('reviewRating').value;
-            for(let w of badWords) if(c.includes(w)) return alert("Mot interdit");
-            if(!n || !c) return alert("Vide");
-            await fetch(API_URL+'/reviews', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({author:n, content:c, rating:r})});
-            location.reload();
+            
+            for(let w of badWords) if(c.toLowerCase().includes(w)) return alert("Contenu inapproprié détecté.");
+            if(!n || !c) return alert("Veuillez remplir tous les champs.");
+
+            try {
+                const res = await fetch(API_URL+'/reviews', {
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body:JSON.stringify({author:n, content:c, rating:r})
+                });
+                const data = await res.json();
+                
+                if(data.success && data.token) {
+                    // SAUVEGARDE DU TOKEN DANS LE NAVIGATEUR (IMPORTANT POUR POUVOIR SUPPRIMER)
+                    localStorage.setItem('lastReviewToken', data.token);
+                    alert("Avis publié ! Merci.");
+                    location.reload();
+                }
+            } catch(e) { alert("Erreur connexion"); }
         }
+
+        // CHARGEMENT DES AVIS
         fetch(API_URL+'/reviews').then(r=>r.json()).then(reviews => {
-            document.getElementById('reviews-display').innerHTML = reviews.map(r=>`<div class="review-item"><b>${r.author}</b> ${'⭐'.repeat(r.rating)}<p>${r.content}</p></div>`).join('');
+            const container = document.getElementById('reviews-display');
+            const myToken = localStorage.getItem('lastReviewToken'); // Le token de l'utilisateur actuel
+
+            container.innerHTML = reviews.map(r => {
+                // Si l'utilisateur a le token qui correspond à cet avis (c'est le sien)
+                const isMine = (myToken && r.client_token === myToken);
+                
+                let deleteBtn = '';
+                if(isMine) {
+                    deleteBtn = `<button onclick="deleteMyReview(${r.id}, '${r.client_token}')" style="background:none; border:none; color:#ff3b30; font-size:12px; cursor:pointer; float:right;">🗑️ Supprimer mon avis</button>`;
+                }
+
+                return `
+                <div class="review-item">
+                    ${deleteBtn}
+                    <b>${r.author}</b> ${'⭐'.repeat(r.rating)}
+                    <p>${r.content}</p>
+                </div>`;
+            }).join('');
         });
+
+        // FONCTION POUR SUPPRIMER SON PROPRE AVIS
+        async function deleteMyReview(id, token) {
+            if(!confirm("Supprimer votre avis ?")) return;
+            const res = await fetch(API_URL + '/reviews/' + id, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ token: token }) // On envoie le token pour prouver qu'on est l'auteur
+            });
+            if(res.ok) location.reload();
+            else alert("Impossible de supprimer (Token expiré ou invalide)");
+        }
 
         // TRACKING
         const urlParams = new URLSearchParams(window.location.search);
