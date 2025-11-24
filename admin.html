@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Repair Phone BX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --primary: #ff5c39; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        
+        /* LOGIN MODAL */
+        #loginModal { position: fixed; top:0; left:0; width:100%; height:100%; background: #111; display: flex; justify-content: center; align-items: center; z-index: 999; }
+        .login-box { background: white; padding: 30px; border-radius: 12px; text-align: center; width: 300px; }
+        .login-box input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; }
+        .login-box button { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        /* DASHBOARD */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        h1 { margin: 0; }
+        .refresh-btn { background: white; border: 1px solid #ddd; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+
+        /* KPI CARDS */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card h3 { margin: 0 0 10px 0; font-size: 14px; color: #6b7280; text-transform: uppercase; }
+        .card .value { font-size: 32px; font-weight: 700; color: var(--primary); }
+
+        /* GRAPHS & DETAILS */
+        .details-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        @media(max-width: 768px) { .details-grid { grid-template-columns: 1fr; } }
+        
+        .chart-container { background: white; padding: 20px; border-radius: 12px; height: 300px; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 40px; position: relative; }
+        
+        /* Barres du graphique CSS simple */
+        .bar-group { display: flex; flex-direction: column; align-items: center; width: 10%; height: 100%; justify-content: flex-end; }
+        .bar { width: 100%; background: var(--primary); border-radius: 4px 4px 0 0; transition: height 0.5s; min-height: 4px; }
+        .bar-label { margin-top: 10px; font-size: 12px; color: #666; }
+
+        .list-group { list-style: none; padding: 0; margin: 0; }
+        .list-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .list-item:last-child { border: none; }
+    </style>
+</head>
+<body>
+
+    <!-- SÉCURITÉ (Mot de passe) -->
+    <div id="loginModal">
+        <div class="login-box">
+            <h2>🔐 Accès Admin</h2>
+            <input type="password" id="passwordInput" placeholder="Mot de passe secret">
+            <button onclick="login()">Entrer</button>
+            <p id="errorMsg" style="color:red; font-size:12px; display:none;">Mot de passe incorrect</p>
+        </div>
+    </div>
+
+    <!-- CONTENU -->
+    <div id="dashboard" style="display:none;">
+        <div class="header">
+            <h1>📊 Statistiques Repair Phone</h1>
+            <button class="refresh-btn" onclick="loadData()">🔄 Actualiser</button>
+        </div>
+
+        <!-- KPI -->
+        <div class="kpi-grid">
+            <div class="card">
+                <h3>Visites Aujourd'hui</h3>
+                <div class="value" id="val-today">0</div>
+            </div>
+            <div class="card">
+                <h3>Visites Totales</h3>
+                <div class="value" id="val-total">0</div>
+            </div>
+            <div class="card">
+                <h3>Clics Réservation</h3>
+                <div class="value" id="val-clicks">0</div>
+            </div>
+        </div>
+
+        <div class="details-grid">
+            <!-- GRAPHIQUE 7 JOURS -->
+            <div class="card">
+                <h3>Trafic des 7 derniers jours</h3>
+                <div class="chart-container" id="chart-container">
+                    <!-- Les barres seront générées ici par JS -->
+                    Loading graph...
+                </div>
+            </div>
+
+            <!-- APPAREILS -->
+            <div class="card">
+                <h3>Appareils & Interactions</h3>
+                <ul class="list-group" id="device-list">
+                    <!-- Liste générée par JS -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = null;
+
+        // 1. LOGIN
+        async function login() {
+            const pass = document.getElementById('passwordInput').value;
+            
+            // On teste le mot de passe en demandant les stats
+            const res = await fetch('/api/admin/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pass })
+            });
+
+            if (res.ok) {
+                token = pass;
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                const data = await res.json();
+                renderDashboard(data);
+            } else {
+                document.getElementById('errorMsg').style.display = 'block';
+            }
+        }
+
+        // 2. CHARGER ET AFFICHER
+        async function loadData() {
+            if(!token) return;
+            const res = await fetch('/api/admin/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: token })
+            });
+            const data = await res.json();
+            renderDashboard(data);
+        }
+
+        function renderDashboard(data) {
+            // KPI
+            document.getElementById('val-total').innerText = data.total;
+            document.getElementById('val-today').innerText = data.today;
+            
+            // Clics totaux
+            let totalClicks = 0;
+            data.clicks.forEach(c => totalClicks += parseInt(c.count));
+            document.getElementById('val-clicks').innerText = totalClicks;
+
+            // GRAPHIQUE BARRES (CSS)
+            const chartDiv = document.getElementById('chart-container');
+            chartDiv.innerHTML = '';
+            
+            // Trouver le max pour l'échelle
+            let maxVal = 0;
+            data.chart.forEach(d => { if(parseInt(d.count) > maxVal) maxVal = parseInt(d.count); });
+            if(maxVal === 0) maxVal = 1;
+
+            data.chart.forEach(day => {
+                const height = (day.count / maxVal) * 80; // 80% max height
+                chartDiv.innerHTML += `
+                    <div class="bar-group">
+                        <div style="font-weight:bold; font-size:10px; margin-bottom:5px;">${day.count}</div>
+                        <div class="bar" style="height: ${height}%;"></div>
+                        <div class="bar-label">${day.day}</div>
+                    </div>
+                `;
+            });
+
+            // LISTE APPAREILS
+            const list = document.getElementById('device-list');
+            list.innerHTML = '';
+            data.devices.forEach(dev => {
+                list.innerHTML += `<li class="list-item"><span>📱 ${dev.device}</span> <strong>${dev.count}</strong></li>`;
+            });
+            data.clicks.forEach(clk => {
+                list.innerHTML += `<li class="list-item"><span>👆 ${clk.target}</span> <strong>${clk.count}</strong></li>`;
+            });
+        }
+    </script>
+</body>
+</html>
