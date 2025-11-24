@@ -11,7 +11,7 @@
             --primary: #ff5c39; --dark: #1d1d1f; --bg-body: #fbfbfd; 
             --green-gradient: linear-gradient(180deg, #34c759 0%, #30b753 100%);
             --radius-md: 18px; --shadow-sm: 0 2px 8px rgba(0,0,0,0.04); --shadow-hover: 0 20px 40px rgba(0,0,0,0.1);
-            --promo: #ff3b30;
+            --promo: #ff3b30; --eco: #34c759;
         }
         * { box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; margin: 0; color: var(--dark); background-color: var(--bg-body); scroll-behavior: smooth; }
@@ -51,7 +51,7 @@
         
         .badge { position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); font-size: 10px; font-weight: 700; padding: 6px 12px; border-radius: 99px; text-transform: uppercase; }
         .badge-promo { background: var(--promo); color: white; }
-        .badge-eco { background: #34c759; color: white; }
+        .badge-eco { background: var(--eco); color: white; }
         .badge-new { background: #0071e3; color: white; }
         .badge-oled { background: black; color: white; }
         
@@ -222,12 +222,12 @@
         const techLCD = `<strong>Norme :</strong> Écran LCD LTPS (Qualité/Prix)<br><strong>Solidité :</strong> Verre renforcé.<br><strong>Couleurs :</strong> Gamut P3 vives.<br><strong>Réactivité :</strong> Tactile fluide.`;
         const techOLED = `<strong>Technologie :</strong> Écran COMPATIBLE OLED<br><strong>Qualité :</strong> Affichage exceptionnel d'origine.`;
 
-        [cite_start]// --- 1. GAMME ECO (Prix PDF, pas de promo) [cite: 5-7] ---
+        // --- 1. GAMME ECO (Prix PDF, pas de promo) ---
         const ecoModels = [
             {m: "iPhone X", p: 40, img: "images/iphone-X-noir.jpg"}, 
             {m: "iPhone XS", p: 40, img: "images/iphone-XS-.jpg"},
             {m: "iPhone XR", p: 45, img: "images/apple-iphone-XR-.jpg"},
-            {m: "iPhone XS Max", p: 45, img: "images/apple-iphone-XSmax.jpg"}, // Changé de promo à eco (car 45€ sur PDF)
+            {m: "iPhone XS Max", p: 45, img: "images/apple-iphone-XSmax.jpg"},
             {m: "iPhone 11", p: 50, img: "images/apple-iphone-11.jpg"}, 
             {m: "iPhone 11 Pro", p: 50, img: "images/apple-iphone-11Pro.jpg"}
         ];
