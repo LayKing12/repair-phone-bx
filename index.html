@@ -5,100 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Repair Phone BX - Réparation iPhone</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
     <style>
-        :root { 
-            --primary: #ff5c39; --dark: #1d1d1f; --bg-body: #fbfbfd; 
-            --green-gradient: linear-gradient(180deg, #34c759 0%, #30b753 100%);
-            --radius-md: 18px; --shadow-sm: 0 2px 8px rgba(0,0,0,0.04); --shadow-hover: 0 20px 40px rgba(0,0,0,0.1);
-            --promo: #ff3b30; --eco: #34c759;
-        }
-        * { box-sizing: border-box; }
+        :root { --primary: #ff5c39; --dark: #1d1d1f; --bg-body: #fbfbfd; --green-gradient: linear-gradient(180deg, #34c759 0%, #30b753 100%); --radius-md: 18px; }
         body { font-family: 'Inter', sans-serif; margin: 0; color: var(--dark); background-color: var(--bg-body); scroll-behavior: smooth; }
-        
-        header { padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); z-index: 1000; border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .logo { font-size: 22px; font-weight: 700; color: var(--dark); }
-        .btn-contact { background: var(--dark); color: white; padding: 10px 22px; border-radius: 99px; cursor: pointer; border: none; font-weight: 600; }
+        * { box-sizing: border-box; }
 
-        .hero { background: linear-gradient(135deg, #ffffff 0%, #fff8f6 100%); padding: 60px 20px; max-width: 1200px; margin: 30px auto; border-radius: 24px; text-align: center; box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.03); }
+        header { padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); z-index: 1000; border-bottom: 1px solid #eee; }
+        .logo { font-size: 22px; font-weight: 700; }
+        .btn-contact { background: var(--dark); color: white; padding: 10px 22px; border-radius: 99px; border: none; font-weight: 600; cursor: pointer; }
+
+        .hero { background: linear-gradient(135deg, #ffffff 0%, #fff8f6 100%); padding: 60px 20px; max-width: 1200px; margin: 30px auto; border-radius: 24px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .promo-banner { background: linear-gradient(90deg, #ff5c39, #ff3b30); color: white; padding: 8px 16px; border-radius: 99px; font-weight: 700; text-transform: uppercase; font-size: 11px; display: inline-block; margin-bottom: 20px; }
-        .hero h1 { font-size: 42px; margin: 0 0 10px 0; color: #1d1d1f; }
+        .hero h1 { font-size: 42px; margin: 0 0 10px 0; }
 
-        /* BARRE DE RECHERCHE */
         .search-container { max-width: 600px; margin: 0 auto 40px auto; position: relative; }
-        .search-input { width: 100%; padding: 16px 50px; border: 1px solid #ddd; border-radius: 99px; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; }
-        .search-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 4px 15px rgba(255, 92, 57, 0.15); }
-        .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 20px; color: #999; }
+        .search-input { width: 100%; padding: 16px 50px; border: 1px solid #ddd; border-radius: 99px; font-size: 16px; }
+        .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); }
 
-        .container { display: flex; max-width: 1200px; margin: 0 auto; padding: 0 20px 80px 20px; gap: 40px; }
-        
-        .sidebar { width: 240px; position: sticky; top: 100px; height: fit-content; background: white; padding: 10px; border-radius: var(--radius-md); display: none; box-shadow: var(--shadow-sm); }
-        .sidebar li { list-style: none; padding: 14px 20px; margin-bottom: 5px; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 14px; color: #86868b; transition: 0.2s; }
-        .sidebar li:hover { background: #f5f5f7; color: var(--dark); }
+        .container { display: flex; max-width: 1300px; margin: 0 auto; padding-bottom: 60px; gap: 30px; }
+        .sidebar { width: 240px; position: sticky; top: 100px; height: fit-content; background: white; padding: 10px; border-radius: var(--radius-md); display: none; }
+        .sidebar li { list-style: none; padding: 14px 20px; cursor: pointer; font-weight: 600; color: #86868b; transition: 0.2s; }
+        .sidebar li:hover { color: var(--dark); }
         @media (min-width: 1024px) { .sidebar { display: block; } }
 
         .services-list { flex: 1; }
-        .category-title { font-size: 24px; font-weight: 700; margin: 50px 0 25px 0; color: var(--dark); display: flex; align-items: center; scroll-margin-top: 120px; }
-        .category-title::before { content: ''; display: block; width: 6px; height: 24px; background: var(--primary); border-radius: 4px; margin-right: 12px; }
-        
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 25px; }
+        .category-title { font-size: 24px; font-weight: 700; margin: 40px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 15px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; }
 
-        .card { background: white; border-radius: var(--radius-md); overflow: hidden; transition: 0.3s; border: 1px solid rgba(0,0,0,0.04); display: flex; flex-direction: column; box-shadow: var(--shadow-sm); }
-        .card:hover { transform: translateY(-8px); box-shadow: var(--shadow-hover); }
-
-        .card-img-container { height: 240px; background: #f9f9f9; display: flex; align-items: center; justify-content: center; padding: 30px; position: relative; }
+        .card { background: white; border-radius: var(--radius-md); overflow: hidden; transition: 0.3s; border: 1px solid #eee; display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+        .card-img-container { height: 220px; background: #f9f9f9; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
         .card-img { max-height: 100%; max-width: 100%; object-fit: contain; mix-blend-mode: multiply; }
         
-        .badge { position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); font-size: 10px; font-weight: 700; padding: 6px 12px; border-radius: 99px; text-transform: uppercase; }
-        .badge-promo { background: var(--promo); color: white; }
-        .badge-eco { background: var(--eco); color: white; }
-        .badge-new { background: #0071e3; color: white; }
-        .badge-oled { background: black; color: white; }
-        
+        .badge { position: absolute; top: 12px; left: 12px; background: #e0ffe0; color: #008000; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 99px; }
+        .badge-promo { background: var(--primary); color: white; }
+
         .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
         .card-title { font-size: 17px; font-weight: 600; margin: 0 0 6px 0; }
-        .card-desc { font-size: 13px; color: #86868b; margin-bottom: 15px; line-height: 1.4; flex: 1; }
-        
-        .toggle-tech { background: none; border: none; color: #0071e3; font-size: 12px; font-weight: 500; cursor: pointer; padding: 0; margin-bottom: 12px; text-align: left; }
-        .tech-details { font-size: 11px; color: #555; margin-bottom: 15px; display: none; background: #f5f5f7; padding: 10px; border-radius: 8px; line-height: 1.5; }
+        .card-desc { font-size: 13px; color: #86868b; margin-bottom: 15px; flex: 1; }
+        .toggle-tech { background: none; border: none; color: #0071e3; font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 12px; text-align: left; }
+        .tech-details { font-size: 11px; color: #555; margin-bottom: 15px; display: none; background: #f5f5f7; padding: 10px; border-radius: 8px; }
 
         .price-row { display: flex; align-items: baseline; margin-bottom: 15px; }
-        .price-old { text-decoration: line-through; color: #bbb; font-size: 14px; margin-right: 10px; font-weight: 500; }
         .price-current { font-size: 24px; font-weight: 700; color: var(--dark); }
-        .price-promo { color: var(--promo); }
-
-        .btn-buy { background: var(--green-gradient); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 14px; transition: 0.2s; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3); }
-        .btn-buy:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(52, 199, 89, 0.4); }
+        .price-old { text-decoration: line-through; color: #bbb; font-size: 14px; margin-right: 10px; }
+        .btn-buy { background: var(--green-gradient); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: 600; cursor: pointer; }
 
         /* MODAL */
-        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 2000; }
-        .modal { background: white; padding: 35px; border-radius: 24px; width: 480px; max-width: 90%; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
-        .modal-tech-info { background: #f5f9ff; border: 1px solid rgba(0, 113, 227, 0.1); padding: 15px; border-radius: 12px; font-size: 13px; color: #004085; margin-bottom: 25px; line-height: 1.6; }
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: white; padding: 30px; border-radius: 24px; width: 480px; max-width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-large { width: 600px; }
         
-        .price-recap { background: #fffdf5; padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid rgba(255, 193, 7, 0.2); }
-        .price-row-modal { display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px; color: #555; }
-        
-        .form-group { margin-bottom: 20px; }
-        .form-group label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 8px; }
-        .form-group input { width: 100%; padding: 14px; border: 1px solid #d2d2d7; border-radius: 12px; font-size: 15px; }
-        .phone-group { display: flex; align-items: center; }
-        .phone-prefix { background: #f5f5f7; border: 1px solid #d2d2d7; border-right: none; padding: 14px; border-radius: 12px 0 0 12px; font-weight: 600; color: #555; font-size: 15px; }
-        #phoneInput { border-radius: 0 12px 12px 0; }
-        
-        .btn-confirm { background: var(--primary); color: white; border: none; padding: 16px; width: 100%; font-weight: 700; cursor: pointer; border-radius: 14px; font-size: 16px; transition: transform 0.2s; }
-        .btn-confirm:hover { transform: scale(1.02); }
+        /* CHOIX PAIEMENT */
+        .payment-options { display: flex; gap: 10px; margin-bottom: 20px; }
+        .payment-option { flex: 1; border: 2px solid #eee; padding: 15px; border-radius: 12px; cursor: pointer; text-align: center; transition: 0.2s; }
+        .payment-option.active { border-color: var(--primary); background: #fff5f2; }
+        .payment-option strong { display: block; font-size: 16px; margin-bottom: 4px; }
+        .payment-option small { font-size: 12px; color: #666; }
 
-        /* AVIS */
-        .reviews-section { max-width: 1200px; margin: 60px auto; background: white; padding: 50px; border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
-        .review-form input, .review-form textarea, .review-form select { border: 1px solid #d2d2d7; border-radius: 12px; padding: 12px; width: 100%; margin-bottom: 10px; font-family: inherit; }
-        .review-item { border-bottom: 1px solid #eee; padding: 20px 0; position: relative; }
-        .review-options { position: absolute; top: 15px; right: 0; }
-        .dots-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #ccc; padding: 0 10px; }
-        .options-menu { display: none; position: absolute; right: 0; top: 30px; background: white; border: 1px solid #eee; border-radius: 12px; box-shadow: var(--shadow-hover); z-index: 10; width: 140px; }
-        .options-menu button { display: block; width: 100%; text-align: left; padding: 12px 15px; background: none; border: none; cursor: pointer; font-size: 13px; }
-        .btn-delete { color: #ff3b30; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 16px; width: 100%; font-weight: 700; cursor: pointer; border-radius: 14px; font-size: 16px; }
 
-        @media (max-width: 768px) { .container { flex-direction: column; padding: 15px; } .sidebar { display: none; } .modal { width: 90%; padding: 25px; } .grid { grid-template-columns: 1fr; } }
+        .reviews-section { max-width: 1200px; margin: 60px auto; background: white; padding: 40px; border-radius: var(--radius-md); }
+        .review-item { border-bottom: 1px solid #eee; padding: 15px 0; }
+
+        @media (max-width: 768px) { .container { flex-direction: column; padding: 15px; } .sidebar { display: none; } .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -113,43 +86,38 @@
         <h1>Réparation iPhone Express</h1>
         <p style="margin-bottom: 20px;">📍 Ribaucourt, 1080 Molenbeek</p>
         <div style="display:inline-flex; gap:10px; flex-wrap:wrap; justify-content:center;">
-            <span style="background:#f0f0f0; padding:5px 12px; border-radius:8px; font-size:13px; font-weight:500;">✅ 30 minutes</span>
-            <span style="background:#f0f0f0; padding:5px 12px; border-radius:8px; font-size:13px; font-weight:500;">💎 Pièces Premium</span>
-            <span style="background:#f0f0f0; padding:5px 12px; border-radius:8px; font-size:13px; font-weight:500;">🛡️ Garantie incluse</span>
+            <span style="background:#f0f0f0; padding:5px 12px; border-radius:8px; font-size:13px;">✅ 30 minutes</span>
+            <span style="background:#f0f0f0; padding:5px 12px; border-radius:8px; font-size:13px;">💎 Pièces Premium</span>
+            <span style="background:#f0f0f0; padding:5px 12px; border-radius:8px; font-size:13px;">🛡️ Garantie incluse</span>
         </div>
     </div>
 
     <div class="search-container">
-        <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" id="searchInput" placeholder="Rechercher votre modèle (ex: iPhone 13)..." onkeyup="filterServices()">
+        <span style="position:absolute; left:20px; top:50%; transform:translateY(-50%);">🔍</span>
+        <input type="text" class="search-input" id="searchInput" placeholder="Rechercher votre modèle..." onkeyup="filterServices()">
     </div>
 
     <div class="container">
         <div class="sidebar">
             <ul>
-                <li onclick="scrollToSection('eco')">🍏 GAMME ÉCO (Petits Prix)</li>
-                <li onclick="scrollToSection('promo')">🔥 PROMO FLASH (50€)</li>
+                <li onclick="scrollToSection('eco')">🍏 GAMME ÉCO</li>
+                <li onclick="scrollToSection('promo')">🔥 PROMO FLASH</li>
                 <li onclick="scrollToSection('normal')">📱 ÉCRANS (Max)</li>
-                <li onclick="scrollToSection('oled')">💎 GAMME OLED (15/16)</li>
+                <li onclick="scrollToSection('oled')">💎 OLED (15/16)</li>
                 <li onclick="scrollToSection('batterie')">🔋 BATTERIES</li>
-                <li onclick="scrollToSection('avis')">⭐ AVIS CLIENTS</li>
+                <li onclick="scrollToSection('avis')">⭐ AVIS</li>
             </ul>
         </div>
 
         <div class="services-list">
-
             <h2 class="category-title" id="eco">GAMME ÉCO (Petits Prix)</h2>
             <div id="eco-grid" class="grid"></div>
-
             <h2 class="category-title" id="promo">PROMO FLASH 50€</h2>
             <div id="promo-grid" class="grid"></div>
-
             <h2 class="category-title" id="normal">ÉCRANS HORS PROMO</h2>
             <div id="normal-grid" class="grid"></div>
-
             <h2 class="category-title" id="oled">ÉCRANS OLED (NOUVEAUTÉS)</h2>
             <div id="oled-grid" class="grid"></div>
-
             <h2 class="category-title" id="batterie">BATTERIES NEUVES</h2>
             <div id="battery-grid" class="grid"></div>
         </div>
@@ -157,36 +125,29 @@
 
     <div class="reviews-section" id="avis">
         <h3>Avis Clients</h3>
-        <div class="review-form">
-            <input type="text" id="reviewName" placeholder="Votre nom">
-            <select id="reviewRating">
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="reviewName" placeholder="Votre nom" style="width:100%; padding:10px; margin-bottom:5px; border:1px solid #ddd; border-radius:8px;">
+            <select id="reviewRating" style="padding:10px; margin-bottom:5px; border:1px solid #ddd; border-radius:8px;">
                 <option value="5">⭐⭐⭐⭐⭐ - Excellent</option>
                 <option value="4">⭐⭐⭐⭐ - Très bon</option>
                 <option value="3">⭐⭐⭐ - Moyen</option>
-                <option value="2">⭐⭐ - Bof</option>
-                <option value="1">⭐ - Mauvais</option>
             </select>
-            <textarea id="reviewContent" placeholder="Racontez votre expérience..."></textarea>
-            <button class="btn-contact" onclick="submitReview()" style="margin-top: 10px; width: 100%;">Publier l'avis</button>
+            <textarea id="reviewContent" placeholder="Votre avis..." style="width:100%; height:80px; padding:10px; border:1px solid #ddd; border-radius:8px;"></textarea>
+            <button class="btn-contact" onclick="submitReview()" style="width:100%; margin-top:10px;">Publier</button>
         </div>
-        <div id="reviews-display" style="margin-top: 40px;"></div>
-    </div>
-
-    <div style="max-width: 1200px; margin: 0 auto; padding: 20px; margin-bottom: 40px;">
-        <h2 style="text-align:center; color:var(--dark); margin-bottom:20px;">📍 Nous trouver</h2>
-        <div style="width: 100%; height: 400px; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05);">
-            <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2518.6351136143165!2d4.338582376946546!3d50.85647537167196!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c3c3939274a6b3%3A0x40e3c7171247d925!2sRibaucourt!5e0!3m2!1sfr!2sbe!4v1700000000000!5m2!1sfr!2sbe" 
-                width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-        </div>
+        <div id="reviews-display"></div>
     </div>
 
     <div class="modal-overlay" id="legalModal">
         <div class="modal modal-large">
             <button onclick="document.getElementById('legalModal').style.display='none'" style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:24px; cursor:pointer;">×</button>
             <h2>Mentions Légales</h2>
-            <div style="font-size:14px; line-height:1.6; color:#555;">
-                <p><strong>1. Éditeur</strong><br>Repair Phone BX<br>Ribaucourt, 1080 Molenbeek</p>
+            <div style="font-size:13px; line-height:1.6; color:#555;">
+                <p><strong>Éditeur :</strong> Repair Phone BX, Ribaucourt, 1080 Molenbeek. Contact: aliouking.14@gmail.com - 0467 79 17 37.</p>
+                <p><strong>Hébergement :</strong> Render (USA).</p>
+                <p><strong>Paiement :</strong> Sécurisé par Stripe.</p>
+                <p><strong>Données Personnelles :</strong> Les données collectées (nom, email, téléphone) sont utilisées uniquement pour la gestion des rendez-vous et la facturation. Elles ne sont pas partagées avec des tiers.</p>
+                <p><strong>CGV :</strong> Le client accepte de payer l'acompte en ligne. Le solde est dû sur place après réparation.</p>
             </div>
         </div>
     </div>
@@ -194,79 +155,69 @@
     <div class="modal-overlay" id="bookingModal">
         <div class="modal">
             <button onclick="closeModal()" style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:24px; cursor:pointer;">×</button>
-            <h2>Réserver</h2>
-            <div id="techInfoModal" class="modal-tech-info"></div>
-            <div class="price-recap">
-                <div class="price-row-modal" style="font-weight:600; border-bottom:1px solid #e0e0e0; padding-bottom:10px; margin-bottom:10px; color:#333;">
-                    <span id="selectedServiceDisplay">Service</span>
+            <h2 style="color:var(--primary); margin-top:0;">Réserver</h2>
+            
+            <p style="font-weight:bold; margin-bottom:20px;" id="serviceNameModal">Service</p>
+
+            <div class="payment-options">
+                <div class="payment-option active" onclick="selectPayment('deposit', this)">
+                    <strong>Acompte</strong>
+                    <span style="color:var(--primary); font-weight:bold;">15 €</span>
+                    <br><small>Reste à payer sur place</small>
                 </div>
-                <div class="price-row-modal"><span>Prix Total :</span><span id="displayTotal">0 €</span></div>
-                <div class="price-row-modal" style="color:#b45309; font-weight:bold;"><span>Acompte (Carte) :</span><span>15 €</span></div>
-                <div class="price-row-modal" style="color:var(--dark); font-weight:600;"><span>Reste à payer (Sur place) :</span><span id="displayRest">0 €</span></div>
+                <div class="payment-option" onclick="selectPayment('full', this)">
+                    <strong>Totalité</strong>
+                    <span id="fullPriceBtn" style="color:var(--primary); font-weight:bold;">0 €</span>
+                    <br><small>Paiement complet</small>
+                </div>
             </div>
-            <div class="form-group"><label>Nom Complet</label><input type="text" id="nameInput" placeholder="Prénom Nom"></div>
-            <div class="form-group"><label>Email (Pour le reçu)</label><input type="email" id="emailInput" placeholder="exemple@gmail.com"></div>
-            <div class="form-group"><label>Téléphone</label><div class="phone-group"><span class="phone-prefix">+32</span><input type="number" id="phoneInput" placeholder="467 12 34 56"></div></div>
+
+            <div class="form-group"><label>Nom Complet</label><input type="text" id="nameInput"></div>
+            <div class="form-group"><label>Email (Reçu Stripe)</label><input type="email" id="emailInput"></div>
+            <div class="form-group"><label>Téléphone</label><input type="number" id="phoneInput" placeholder="Ex: 467 12 34 56"></div>
             <div class="form-group"><label>Date</label><input type="date" id="dateInput"></div>
-            <button class="btn-confirm" onclick="confirmBooking()">Payer l'acompte (15€)</button>
+            
+            <button class="btn-confirm" onclick="confirmBooking()">Procéder au paiement</button>
         </div>
     </div>
 
+    <div style="max-width: 1200px; margin: 20px auto; padding: 20px;">
+        <h2 style="text-align:center;">📍 Nous trouver</h2>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2518.6351136143165!2d4.338582376946546!3d50.85647537167196!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c3c3939274a6b3%3A0x40e3c7171247d925!2sRibaucourt!5e0!3m2!1sfr!2sbe!4v1700000000000!5m2!1sfr!2sbe" width="100%" height="400" style="border:0; border-radius:24px;" allowfullscreen="" loading="lazy"></iframe>
+    </div>
+
     <script>
-        // ✅ TON LIEN RENDER OFFICIEL
+        // ⚠️ LIEN FINAL RENDER
         const API_URL = 'https://repair-phone-bx-1.onrender.com';
         
         let currentPrice = 0;
         let selectedService = "";
+        let paymentChoice = 'deposit'; // Par défaut: Acompte
 
-        const techLCD = `<strong>Norme :</strong> Écran LCD LTPS (Qualité/Prix)<br><strong>Solidité :</strong> Verre renforcé.<br><strong>Couleurs :</strong> Gamut P3 vives.<br><strong>Réactivité :</strong> Tactile fluide.`;
+        const techLCD = `<strong>Norme :</strong> Écran LCD LTPS (Qualité/Prix)<br><strong>Solidité :</strong> Verre renforcé.<br><strong>Réactivité :</strong> Tactile fluide.`;
         const techOLED = `<strong>Technologie :</strong> Écran COMPATIBLE OLED<br><strong>Qualité :</strong> Affichage exceptionnel d'origine.`;
 
-        // --- 1. GAMME ECO (Prix PDF, pas de promo) ---
         const ecoModels = [
-            {m: "iPhone X", p: 40, img: "images/iphone-X-noir.jpg"}, 
-            {m: "iPhone XS", p: 40, img: "images/iphone-XS-.jpg"},
-            {m: "iPhone XR", p: 45, img: "images/apple-iphone-XR-.jpg"},
-            {m: "iPhone XS Max", p: 45, img: "images/apple-iphone-XSmax.jpg"},
-            {m: "iPhone 11", p: 50, img: "images/apple-iphone-11.jpg"}, 
-            {m: "iPhone 11 Pro", p: 50, img: "images/apple-iphone-11Pro.jpg"}
+            {m: "iPhone X", p: 40, img: "images/iphone-X-noir.jpg"}, {m: "iPhone XS", p: 40, img: "images/iphone-XS-.jpg"},
+            {m: "iPhone XR", p: 45, img: "images/apple-iphone-XR-.jpg"}, {m: "iPhone XS Max", p: 45, img: "images/apple-iphone-XSmax.jpg"},
+            {m: "iPhone 11", p: 50, img: "images/apple-iphone-11.jpg"}, {m: "iPhone 11 Pro", p: 50, img: "images/apple-iphone-11Pro.jpg"}
         ];
-
-        // --- 2. LA VRAIE PROMO (Prix barré -> 50€) ---
         const promoModels = [
             {m: "iPhone 11 Pro Max", old: 60, img: "images/iphone-11ProMax.jpg"},
-            {m: "iPhone 12", old: 70, img: "images/apple-iphone-12.jpg"}, 
-            {m: "iPhone 12 Mini", old: 70, img: "images/apple-iphone-12-mini.jpg"}, 
-            {m: "iPhone 12 Pro", old: 75, img: "images/apple-iphone-12Pro.jpg"}, 
-            {m: "iPhone 12 Pro Max", old: 85, img: "images/iphone-12ProMax.jpg"},
-            {m: "iPhone 13", old: 80, img: "images/apple-iphone-13.jpg"}, 
-            {m: "iPhone 13 Mini", old: 75, img: "images/apple-iphone-13-mini.jpg"}, 
-            {m: "iPhone 13 Pro", old: 155, img: "images/apple-iphone-13Pro.jpg"}, 
-            {m: "iPhone 14", old: 80, img: "images/apple-iphone-14.jpg"}, 
-            {m: "iPhone 14 Plus", old: 90, img: "images/apple-iphone-14-Plus.jpg"}, 
-            {m: "iPhone 14 Pro", old: 155, img: "images/apple-iphone-14Pro.jpg"}
+            {m: "iPhone 12", old: 70, img: "images/apple-iphone-12.jpg"}, {m: "iPhone 12 Mini", old: 70, img: "images/apple-iphone-12-mini.jpg"},
+            {m: "iPhone 12 Pro", old: 75, img: "images/apple-iphone-12Pro.jpg"}, {m: "iPhone 12 Pro Max", old: 85, img: "images/iphone-12ProMax.jpg"},
+            {m: "iPhone 13", old: 80, img: "images/apple-iphone-13.jpg"}, {m: "iPhone 13 Mini", old: 75, img: "images/apple-iphone-13-mini.jpg"},
+            {m: "iPhone 13 Pro", old: 155, img: "images/apple-iphone-13Pro.jpg"}, {m: "iPhone 14", old: 80, img: "images/apple-iphone-14.jpg"},
+            {m: "iPhone 14 Plus", old: 90, img: "images/apple-iphone-14-Plus.jpg"}, {m: "iPhone 14 Pro", old: 155, img: "images/apple-iphone-14Pro.jpg"}
         ];
-
-        // --- 3. HORS PROMO (13PM, 14PM) ---
-        const horsPromo = [
-            {m: "iPhone 13 Pro Max", p: 180, type: "LCD", img: "images/iphone-13ProMax.jpg"},
-            {m: "iPhone 14 Pro Max", p: 180, type: "LCD", img: "images/iphone-14-pro-max.jpg"}
-        ];
-
-        // --- 4. OLED (15, 16) ---
+        const horsPromo = [{m: "iPhone 13 Pro Max", p: 180, type: "LCD", img: "images/iphone-13ProMax.jpg"}, {m: "iPhone 14 Pro Max", p: 180, type: "LCD", img: "images/iphone-14-pro-max.jpg"}];
         const oledModels = [
-            {m: "iPhone 15", p: 75, type: "OLED", img: "images/iphone-15.jpg"},
-            {m: "iPhone 15 Plus", p: 75, type: "OLED", img: "images/iphone-15Plus.jpg"},
-            {m: "iPhone 15 Pro", p: 85, type: "OLED", img: "images/iphone-15Pro.jpg"},
-            {m: "iPhone 15 Pro Max", p: 150, type: "OLED", img: "images/iphone-15ProMax.jpg"},
-            {m: "iPhone 16", p: 100, type: "OLED", img: "images/iphone-16.jpg"},
-            {m: "iPhone 16 Plus", p: 150, type: "OLED", img: "images/iphone-16Plus.jpg"},
-            {m: "iPhone 16 E", p: 150, type: "OLED", img: "images/iphone-16E.jpg"},
-            {m: "iPhone 16 Pro", p: 150, type: "OLED", img: "images/iphone-16Pro.jpg"},
+            {m: "iPhone 15", p: 75, type: "OLED", img: "images/iphone-15.jpg"}, {m: "iPhone 15 Plus", p: 75, type: "OLED", img: "images/iphone-15Plus.jpg"},
+            {m: "iPhone 15 Pro", p: 85, type: "OLED", img: "images/iphone-15Pro.jpg"}, {m: "iPhone 15 Pro Max", p: 150, type: "OLED", img: "images/iphone-15ProMax.jpg"},
+            {m: "iPhone 16", p: 100, type: "OLED", img: "images/iphone-16.jpg"}, {m: "iPhone 16 Plus", p: 150, type: "OLED", img: "images/iphone-16Plus.jpg"},
+            {m: "iPhone 16 E", p: 150, type: "OLED", img: "images/iphone-16E.jpg"}, {m: "iPhone 16 Pro", p: 150, type: "OLED", img: "images/iphone-16Pro.jpg"},
             {m: "iPhone 16 Pro Max", p: 200, type: "OLED", img: "images/iphone-16ProMax.jpg"}
         ];
-
-        // --- 5. BATTERIES ---
         const batteries = [
             { m: "iPhone X", p: 40, img: "images/iphone-X-noir.jpg" }, { m: "iPhone XS", p: 40, img: "images/iphone-XS-.jpg" },
             { m: "iPhone XR", p: 45, img: "images/apple-iphone-XR-.jpg" }, { m: "iPhone XS Max", p: 45, img: "images/apple-iphone-XSmax.jpg" }, 
@@ -280,34 +231,25 @@
             { m: "iPhone 14 Pro Max", p: 170, img: "images/iphone-14-pro-max.jpg" }
         ];
 
-        // GENERATION HTML
         function createCard(item, type) {
             let badge = "", oldPriceHtml = "", desc = "", tech = "";
-            
             if (type === "PROMO") {
-                badge = `<div class="badge badge-promo">-50%</div>`;
-                oldPriceHtml = `<span class="price-old">${item.old}€</span>`;
-                desc = "Remplacement Écran LCD";
-                tech = techLCD;
+                badge = `<div class="badge badge-promo">-50%</div>`; oldPriceHtml = `<span class="price-old">${item.old}€</span>`;
+                desc = "Remplacement Écran LCD"; tech = techLCD;
             } else if (type === "ECO") {
-                badge = `<div class="badge badge-eco">TOP PRIX</div>`; 
-                desc = "Remplacement Écran LCD";
-                tech = techLCD;
+                badge = `<div class="badge" style="background:#34c759;color:white">TOP PRIX</div>`; desc = "Remplacement Écran LCD"; tech = techLCD;
             } else if (type === "OLED") {
-                badge = `<div class="badge badge-new">NOUVEAU</div>`;
-                desc = "Remplacement Écran OLED Premium";
-                tech = techOLED;
+                badge = `<div class="badge" style="background:#0071e3;color:white">NOUVEAU</div>`; desc = "Remplacement OLED Premium"; tech = techOLED;
             } else if (type === "NORMAL") {
-                desc = "Remplacement Écran LCD Premium";
-                tech = techLCD;
+                desc = "Remplacement Écran LCD Premium"; tech = techLCD;
             } else {
-                badge = `<div class="badge">ORIGINE</div>`;
-                desc = "Batterie neuve haute capacité";
+                badge = `<div class="badge">ORIGINE</div>`; desc = "Batterie neuve haute capacité";
             }
 
             let price = type === "PROMO" ? 50 : item.p;
             let serviceName = type === "BATTERIE" ? `${item.m} - Batterie` : `${item.m} - Écran`;
-            
+            if(type==="PROMO") serviceName += " (Promo)";
+
             return `
             <div class="card">
                 <div class="card-img-container">
@@ -317,56 +259,53 @@
                 <div class="card-body">
                     <div class="card-title">${serviceName}</div>
                     <div class="card-desc">${desc}</div>
-                    ${type !== "BATTERIE" ? `<button class="toggle-tech" onclick="toggleTech(this)">Voir détails techniques</button><div class="tech-details">${tech}</div>` : ''}
+                    ${type !== "BATTERIE" ? `<button class="toggle-tech" onclick="toggleTech(this)">Voir détails</button><div class="tech-details">${tech}</div>` : ''}
                     <div class="price-row">
                         ${oldPriceHtml}
                         <span class="price-current ${type === 'PROMO' ? 'price-promo' : ''}">${price} €</span>
                     </div>
-                    <button class="btn-buy" onclick="openBooking('${serviceName}', ${price}, '${type}')">RÉSERVER</button>
+                    <button class="btn-buy" onclick="openBooking('${serviceName}', ${price})">RÉSERVER</button>
                 </div>
             </div>`;
         }
 
-        // RENDER
         document.getElementById('eco-grid').innerHTML = ecoModels.map(i => createCard(i, "ECO")).join('');
         document.getElementById('promo-grid').innerHTML = promoModels.map(i => createCard(i, "PROMO")).join('');
         document.getElementById('normal-grid').innerHTML = horsPromo.map(i => createCard(i, "NORMAL")).join('');
         document.getElementById('oled-grid').innerHTML = oledModels.map(i => createCard(i, "OLED")).join('');
         document.getElementById('battery-grid').innerHTML = batteries.map(i => createCard(i, "BATTERIE")).join('');
 
-        function filterServices() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            document.querySelectorAll('.card').forEach(card => {
-                card.style.display = card.innerText.toLowerCase().includes(query) ? 'flex' : 'none';
-            });
-        }
-
-        function toggleTech(btn) { const d = btn.nextElementSibling; d.style.display = d.style.display === 'block' ? 'none' : 'block'; btn.innerText = d.style.display === 'block' ? 'Masquer' : 'Voir caractéristiques'; }
+        function toggleTech(btn) { const d = btn.nextElementSibling; d.style.display = d.style.display==='block'?'none':'block'; }
         function showNumber() { document.getElementById('contactBtn').innerText = "📞 0467 79 17 37"; }
         function scrollToSection(id) { document.getElementById(id).scrollIntoView({behavior: 'smooth'}); }
+        function filterServices() { const q=document.getElementById('searchInput').value.toLowerCase(); document.querySelectorAll('.card').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q)?'flex':'none'); }
 
-        function openBooking(service, price, type) {
+        function openBooking(service, price) {
             selectedService = service;
             currentPrice = price;
+            document.getElementById('serviceNameModal').innerText = service;
+            document.getElementById('fullPriceBtn').innerText = price + " €";
             
-            const techModal = document.getElementById('techInfoModal');
-            if (type === "OLED") techModal.innerHTML = `<strong>💎 Écran OLED :</strong> Qualité d'origine, noirs parfaits, contraste infini.`;
-            else if (type === "PROMO" || type === "NORMAL" || type === "ECO") techModal.innerHTML = `<strong>📱 Écran LCD LTPS :</strong> Solidité renforcée, excellent rapport qualité/prix.`;
-            else techModal.innerHTML = `<strong>🔋 Batterie Neuve :</strong> Haute capacité, garantie incluse.`;
+            // Reset option
+            paymentChoice = 'deposit';
+            document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('active'));
+            document.querySelector('.payment-option:first-child').classList.add('active');
 
-            const acompte = 15;
-            const reste = price - acompte;
-
-            document.getElementById('selectedServiceDisplay').innerText = service;
-            document.getElementById('displayTotal').innerText = price + " €";
-            document.getElementById('displayRest').innerText = reste + " €";
-
-            document.getElementById('bookingModal').style.display = 'flex';
             const input = document.getElementById('dateInput');
             const now = new Date();
             const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
             input.min = now.toISOString().split('T')[0];
             input.max = endOfMonth.toISOString().split('T')[0];
+            
+            document.getElementById('bookingModal').style.display = 'flex';
+        }
+
+        function selectPayment(type, element) {
+            paymentChoice = type;
+            document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            const btn = document.querySelector('.btn-confirm');
+            btn.innerText = type === 'deposit' ? "Payer l'acompte (15€)" : `Payer la totalité (${currentPrice}€)`;
         }
 
         function closeModal() { document.getElementById('bookingModal').style.display = 'none'; }
@@ -376,64 +315,53 @@
             const email = document.getElementById('emailInput').value;
             const phone = document.getElementById('phoneInput').value;
             const date = document.getElementById('dateInput').value;
-            if(!name || !email || !phone || !date) return alert("Remplissez tout !");
-            if(phone.length !== 9) return alert("⚠️ Numéro invalide ! (9 chiffres après +32)");
-            if(phone.startsWith('0')) return alert("Pas de 0 au début du numéro !");
             
-            const cleanPhone = "+32" + phone;
+            if(!name || !email || !phone || !date) return alert("Tout est obligatoire !");
+            if(phone.length !== 9 || phone.startsWith('0')) return alert("Numéro invalide ! 9 chiffres sans le 0.");
+
             const btn = document.querySelector('.btn-confirm');
-            btn.innerText = "Chargement...";
+            btn.innerText = "Connexion Stripe...";
             btn.disabled = true;
-            
+
             try {
                 const res = await fetch(API_URL + '/create-checkout-session', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ client_name: name, email: email, phone: cleanPhone, service_type: selectedService, date: date, price: currentPrice })
+                    body: JSON.stringify({ 
+                        client_name: name, 
+                        email: email, 
+                        phone: "+32"+phone, 
+                        service_type: selectedService, 
+                        date: date, 
+                        price: currentPrice,
+                        payment_choice: paymentChoice 
+                    })
                 });
                 const data = await res.json();
                 if(data.url) window.location.href = data.url;
-                else { alert("Erreur Stripe: " + (data.error || "Inconnue")); btn.disabled = false; }
-            } catch (e) { 
-                console.error(e);
-                alert("Erreur serveur (Vérifiez la console)."); 
-                btn.disabled = false; 
-            }
+                else { alert("Erreur: " + (data.error || "Stripe")); btn.disabled=false; }
+            } catch (e) { alert("Erreur serveur"); btn.disabled=false; }
         }
-        
-        const badWords = ["merde", "con", "sex", "salope", "pute", "raciste", "nazi", "hitler", "baiser", "cul", "idiot", "pd", "connard"];
-        let myReviews = JSON.parse(localStorage.getItem('my_reviews') || '[]');
+
+        // Avis
+        const badWords = ["merde", "con", "salope", "pute"];
         async function submitReview() {
-            const name = document.getElementById('reviewName').value;
-            const content = document.getElementById('reviewContent').value;
-            const rating = document.getElementById('reviewRating').value;
-            for (let w of badWords) { if (content.toLowerCase().includes(w)) { alert("⛔ Modération"); return; } }
-            if(!name || !content) return alert("Champs vides");
-            const res = await fetch(API_URL + '/reviews', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ author: name, content: content, rating: rating }) });
-            const data = await res.json();
-            if(data.success && data.id) { myReviews.push(data.id); localStorage.setItem('my_reviews', JSON.stringify(myReviews)); alert("Avis publié !"); document.getElementById('reviewContent').value = ""; loadReviews(); }
+            const n = document.getElementById('reviewName').value;
+            const c = document.getElementById('reviewContent').value;
+            const r = document.getElementById('reviewRating').value;
+            for(let w of badWords) if(c.includes(w)) return alert("Mot interdit");
+            if(!n || !c) return alert("Vide");
+            await fetch(API_URL+'/reviews', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({author:n, content:c, rating:r})});
+            location.reload();
         }
-        async function loadReviews() {
-            try {
-                const res = await fetch(API_URL + '/reviews');
-                const reviews = await res.json();
-                document.getElementById('reviews-display').innerHTML = reviews.map(r => {
-                    let menu = myReviews.includes(r.id) ? `<div class="review-options"><button class="dots-btn" onclick="toggleMenu(${r.id})">⋮</button><div id="menu-${r.id}" class="options-menu"><button onclick="editReview(${r.id})">✏️ Modifier</button><button class="btn-delete" onclick="deleteReview(${r.id})">🗑️ Supprimer</button></div></div>` : "";
-                    return `<div class="review-item">${menu}<strong>${r.author}</strong> <span style="color:#ffc107">${'⭐'.repeat(r.rating)}</span><p id="content-${r.id}">${r.content}</p></div>`;
-                }).join('');
-            } catch(e) {}
-        }
-        function toggleMenu(id) { const m = document.getElementById(`menu-${id}`); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
-        async function deleteReview(id) { if(!confirm("Supprimer ?")) return; await fetch(API_URL + '/reviews/' + id, { method: 'DELETE' }); myReviews = myReviews.filter(i => i !== id); localStorage.setItem('my_reviews', JSON.stringify(myReviews)); loadReviews(); }
-        async function editReview(id) { const n = prompt("Modifier :", document.getElementById(`content-${id}`).innerText); if(n) { await fetch(API_URL + '/reviews/' + id, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ content: n, rating: 5 }) }); loadReviews(); } }
-        loadReviews();
+        fetch(API_URL+'/reviews').then(r=>r.json()).then(reviews => {
+            document.getElementById('reviews-display').innerHTML = reviews.map(r=>`<div class="review-item"><b>${r.author}</b> ${'⭐'.repeat(r.rating)}<p>${r.content}</p></div>`).join('');
+        });
+
     </script>
 
-    <footer style="text-align: center; padding: 30px 10px; color: #bbb; font-size: 12px; margin-top: 40px; border-top: 1px solid #eee;">
-        © 2025 Repair Phone BX - Tous droits réservés.<br>
-        <a href="#" onclick="document.getElementById('legalModal').style.display='flex'; return false;" style="color: #999; text-decoration: underline;">Mentions Légales & CGV</a>
-        <br><br>
-        <a href="/admin-secret-panel" style="color: #eee; text-decoration: none;">Panel Admin</a>
+    <footer style="text-align:center; padding:30px; color:#999; font-size:12px; border-top:1px solid #eee;">
+        © 2025 Repair Phone BX • <a href="#" onclick="document.getElementById('legalModal').style.display='flex';return false;" style="color:#999">Mentions Légales</a>
     </footer>
 </body>
 </html>
