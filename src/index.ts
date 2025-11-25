@@ -26,22 +26,29 @@ function generateTrackingCode(length = 6) {
     return result;
 }
 
-// --- CONFIG EMAIL CORRIGÉE POUR RENDER ---
-// On enlève le port 465 qui est bloqué. On utilise la config auto "service: gmail".
+// --- DERNIÈRE TENTATIVE DE CONFIGURATION GMAIL (PORT 587) ---
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587, // Port standard pour STARTTLS
+    secure: false, // Doit être false pour le port 587
     auth: {
         user: process.env.GMAIL_USER, // Lit la variable sur Render
         pass: process.env.GMAIL_PASS  // Lit la variable sur Render
+    },
+    tls: {
+        // Paramètres pour tenter de forcer la connexion à travers le pare-feu
+        ciphers: 'SSLv3',
+        rejectUnauthorized: false
     }
 });
 
-// Vérification au démarrage (regarde les logs après le déploiement !)
+// Vérification au démarrage (REGARDE LES LOGS JUSTE APRÈS LE DÉPLOIEMENT !)
 transporter.verify(function (error, success) {
     if (error) {
-        console.log("❌ ERREUR EMAIL au démarrage :", error.message);
+        console.log("❌ ÉCHEC TOTAL GMAIL : Le pare-feu de Render bloque probablement la connexion (ETIMEDOUT).");
+        console.error(error);
     } else {
-        console.log("✅ Serveur email prêt !");
+        console.log("✅ MIRACLE ! Serveur email connecté via le port 587.");
     }
 });
 // ----------------------------------------------------
@@ -52,7 +59,7 @@ const pool = new Pool({
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// TA LISTE DE PRODUITS COMPLÈTE
+// TA LISTE DE PRODUITS COMPLÈTE (Pour la réparation de la DB si nécessaire)
 const INITIAL_PRODUCTS = [
     { category: 'ECO', model: 'iPhone X', price: 40, image: 'images/iphone-X-noir.jpg' },
     { category: 'ECO', model: 'iPhone XS', price: 40, image: 'images/iphone-XS-.jpg' },
@@ -103,28 +110,33 @@ const INITIAL_PRODUCTS = [
     { category: 'BATTERIE', model: 'iPhone 14 Pro Max', price: 170, image: 'images/iphone-14-pro-max.jpg' }
 ];
 
+// --- FONCTION D'INITIALISATION ET DE RÉPARATION DE LA DB ---
 const initDB = async () => {
+    console.log("🛠️ Vérification de la base de données...");
     try {
-        // Création des tables si elles n'existent pas
+        // 1. Création des tables de base
         await pool.query(`CREATE TABLE IF NOT EXISTS reservations_v5 (id SERIAL PRIMARY KEY, client_name TEXT, email TEXT, phone TEXT, service_type TEXT, date TEXT, total_price INTEGER, amount_paid INTEGER, payment_status TEXT DEFAULT 'pending', status TEXT DEFAULT 'pending', tracking_code TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS reviews (id SERIAL PRIMARY KEY, author TEXT, content TEXT, rating INTEGER, client_token TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS analytics (id SERIAL PRIMARY KEY, type TEXT, page TEXT, source TEXT, device TEXT, target TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, category TEXT, model TEXT, price INTEGER, old_price INTEGER DEFAULT 0, image TEXT);`);
 
-        // Migrations de sécurité (au cas où)
-        try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN status TEXT DEFAULT 'pending';`); } catch (e) {}
-        try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN tracking_code TEXT;`); } catch (e) {}
-        try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) {}
-        try { await pool.query(`ALTER TABLE reviews ADD COLUMN client_token TEXT;`); } catch (e) {}
-        try { await pool.query(`ALTER TABLE reviews ADD COLUMN date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) {}
-        
-        // Injection des produits initiaux si la table est vide
+        // 2. MIGRATIONS : AJOUT DES COLONNES MANQUANTES (Évite l'erreur 502)
+        // On utilise des blocs try/catch silencieux car si la colonne existe déjà, l'erreur n'est pas grave.
+        try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';`); } catch (e) {}
+        try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN IF NOT EXISTS tracking_code TEXT;`); } catch (e) {}
+        try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) {}
+        try { await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS client_token TEXT;`); } catch (e) {}
+        try { await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) {}
+        console.log("🛠️ Migrations DB terminées.");
+
+        // 3. Injection des produits si la table est vide
         const check = await pool.query('SELECT COUNT(*) FROM products');
         if (parseInt(check.rows[0].count) === 0) {
+            console.log("🌱 Injection des produits initiaux...");
             for (const p of INITIAL_PRODUCTS) { await pool.query('INSERT INTO products (category, model, price, old_price, image) VALUES ($1, $2, $3, $4, $5)', [p.category, p.model, p.price, p.old_price || 0, p.image]); }
         }
-        console.log("✅ DB prête.");
-    } catch (err) { console.error("❌ Erreur DB", err); }
+        console.log("✅ DB prête et à jour.");
+    } catch (err) { console.error("❌ Erreur critique DB durant l'initialisation :", err); }
 };
 
 // ROUTES API
@@ -153,19 +165,20 @@ app.put('/api/admin/reservations/:id/status', CHECK_ADMIN, async (req, res) => {
             const clientRes = await pool.query("SELECT client_name, email, service_type FROM reservations_v5 WHERE id = $1", [resId]);
             if (clientRes.rows.length > 0) {
                 const client = clientRes.rows[0];
+                // Envoi asynchrone (sans await) pour ne pas bloquer l'admin
                 transporter.sendMail({
                     from: `"Repair Phone BX" <${process.env.GMAIL_USER}>`,
                     to: client.email,
                     subject: '✅ Votre appareil est prêt !',
                     html: `<h2>Bonjour ${client.client_name},</h2><p>Bonne nouvelle ! La réparation de votre appareil (${client.service_type}) est terminée.</p><p>Vous pouvez venir le récupérer dès maintenant à notre atelier situé à Ribaucourt.</p><p>À très vite,<br>L'équipe Repair Phone BX</p>`
-                }).catch(e => console.error("Erreur email récupération:", e));
+                }).catch(e => console.error("Erreur email récupération en background:", e.message));
             }
         }
         res.json({success:true});
     } catch(e) { res.status(500).send(); }
 });
 
-// PAIEMENT STRIPE
+// PAIEMENT STRIPE (URL en dur pour Render)
 app.post('/create-checkout-session', async (req, res) => {
     const { client_name, email, phone, service_type, date, price, payment_choice } = req.body;
     const amountToPay = payment_choice === 'deposit' ? 1500 : price * 100;
@@ -183,30 +196,45 @@ app.post('/create-checkout-session', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// SUCCÈS PAIEMENT (Non bloquant)
+// SUCCÈS PAIEMENT (RAPIDE : NE BLOQUE PAS POUR LES EMAILS)
 app.get('/success', async (req, res) => {
     try {
         const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
         const { client_name, email, phone, service_type, date, total_price, type } = session.metadata;
         const trackingCode = generateTrackingCode();
+        
+        // Insertion en DB
         await pool.query(`INSERT INTO reservations_v5 (client_name, email, phone, service_type, date, total_price, amount_paid, payment_status, status, tracking_code) VALUES ($1, $2, $3, $4, $5, $6, $7, 'paid', 'pending', $8)`, [client_name, email, phone, service_type, date, total_price, (type==='deposit' ? 15 : total_price), trackingCode]);
 
+        // ON LANCE LES EMAILS EN ARRIÈRE-PLAN (SANS 'await')
+        const emailPromises = [];
+
         // Email Client
-        transporter.sendMail({
+        emailPromises.push(transporter.sendMail({
             from: `"Repair Phone BX" <${process.env.GMAIL_USER}>`,
             to: email,
             subject: '✅ Confirmation et Code de Suivi',
             html: `<h2>Merci ${client_name} !</h2><p>Votre commande est confirmée pour le ${date}.</p><p>Voici votre CODE DE SUIVI SECRET :</p><h1 style="color:#ff5c39; background:#eee; padding:10px; display:inline-block;">${trackingCode}</h1><p><a href="https://repair-phone-bx-1.onrender.com/suivi.html">Suivre ma commande</a></p>`
-        }).catch(e => console.error("Erreur email client en background:", e));
+        }));
 
         // Email Admin
-        transporter.sendMail({
+        emailPromises.push(transporter.sendMail({
             from: `"Serveur Repair Phone BX" <${process.env.GMAIL_USER}>`,
             to: process.env.GMAIL_USER,
             subject: '🔔 NOUVELLE COMMANDE !',
             html: `<h2>Nouvelle réservation !</h2><p>Client: <b>${client_name}</b></p><p>Service: <b>${service_type}</b></p><p>Date: <b>${date}</b></p><p>Tél: ${phone}</p><p>Email: ${email}</p><p>Code suivi: ${trackingCode}</p>`
-        }).catch(e => console.error("Erreur email admin en background:", e));
+        }));
+        
+        // On gère les erreurs d'envoi en arrière-plan sans bloquer
+        Promise.allSettled(emailPromises).then(results => {
+            results.forEach((result, index) => {
+                if (result.status === 'rejected') {
+                    console.error(`❌ Erreur envoi email ${index === 0 ? 'client' : 'admin'} en background:`, result.reason.message);
+                }
+            });
+        });
 
+        // ON REDIRIGE TOUT DE SUITE
         res.redirect(`/suivi.html?code=${trackingCode}&new=1`);
     } catch(e) { res.send("Erreur enregistrement. Contactez-nous."); console.error(e); }
 });
@@ -217,4 +245,5 @@ app.get('/admin-secret-dashboard', (req, res) => { res.sendFile(path.join(__dirn
 app.get('/suivi.html', (req, res) => { res.sendFile(path.join(__dirname, '../suivi.html')); });
 
 const PORT = process.env.PORT || 4000;
+// On lance l'initialisation DB au démarrage
 app.listen(PORT, async () => { console.log(`🚀 Serveur prêt sur ${PORT}`); await initDB(); });
