@@ -487,23 +487,32 @@
             else alert("Impossible de supprimer");
         }
 
-        // TRACKING
+       // TRACKING (MODIFIÉ POUR EXCLURE L'ADMIN)
         const urlParams = new URLSearchParams(window.location.search);
         const source = urlParams.get('src') || document.referrer || 'direct';
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'Mobile' : 'PC';
 
-        fetch(API_URL + '/api/track', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'view', page: 'home', source: source, device: isMobile, target: null })
-        });
-
-        function trackClick(targetName) {
+        // ON VÉRIFIE SI C'EST L'ADMIN AVANT D'ENVOYER LA STAT DE VISITE
+        // Si le petit marqueur 'isAdminBrowser' n'existe PAS, alors on compte la visite.
+        if(!localStorage.getItem('isAdminBrowser')) {
             fetch(API_URL + '/api/track', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'click', page: 'home', source: source, device: isMobile, target: targetName })
+                body: JSON.stringify({ type: 'view', page: 'home', source: source, device: isMobile, target: null })
             });
+        } else {
+            console.log("Visite Admin ignorée dans les stats.");
+        }
+
+        function trackClick(targetName) {
+            // ON VÉRIFIE AUSSI POUR LES CLICS
+            if(!localStorage.getItem('isAdminBrowser')) {
+                fetch(API_URL + '/api/track', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'click', page: 'home', source: source, device: isMobile, target: targetName })
+                });
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -514,41 +523,6 @@
                 }
             });
         });
-    </script>
-
-    <footer style="text-align:center; padding:30px; color:#999; font-size:12px; border-top:1px solid #eee;">
-        © 2025 Repair Phone BX • 
-        <a href="/suivi.html" style="color:#999; text-decoration:none;">Suivi</a> • 
-        <a href="#" onclick="document.getElementById('legalModal').style.display='flex';return false;" style="color:#999">Mentions Légales & CGV</a>
-        <br><br>
-        <a href="/admin-secret-dashboard" style="color: #eee; text-decoration: none;">Admin</a>
-    </footer>
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "LocalBusiness",
-      "name": "Repair Phone BX",
-      "image": "https://repair-phone-bx-1.onrender.com/images/iphone-13.jpg",
-      "telephone": "0467791737",
-      "email": "aliouking.14@gmail.com",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "Quartier Ribaucourt",
-        "addressLocality": "Molenbeek-Saint-Jean",
-        "postalCode": "1080",
-        "addressCountry": "BE"
-      },
-      "priceRange": "€€",
-      "openingHoursSpecification": [
-        {
-          "@type": "OpeningHoursSpecification",
-          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-          "opens": "10:00",
-          "closes": "19:00"
-        }
-      ]
-    }
     </script>
 </body>
 </html>

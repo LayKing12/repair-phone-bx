@@ -34,11 +34,15 @@
         .status-received { color: #9c27b0; }
         .status-ready { color: var(--success); }
 
-        /* Autres Styles (Stats, etc.) */
+        /* Autres Styles */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .value { font-size: 32px; font-weight: 700; color: var(--primary); }
+        
         .product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .product-price-input { width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; margin-right: 5px; }
+        
         .review-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eee; padding: 15px 0; }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -59,7 +63,7 @@
         </div>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('reservations', this)">Generation Réservations</button>
+            <button class="tab-btn active" onclick="switchTab('reservations', this)">Gestion Réservations</button>
             <button class="tab-btn" onclick="switchTab('stats', this)">📊 Stats</button>
             <button class="tab-btn" onclick="switchTab('products', this)">📦 Produits</button>
             <button class="tab-btn" onclick="switchTab('reviews', this)">🛡️ Avis</button>
@@ -76,6 +80,10 @@
             <div class="kpi-grid">
                 <div class="card"><h3>Visites Aujourd'hui</h3><div class="value" id="val-today">0</div></div>
                 <div class="card"><h3>Visites Totales</h3><div class="value" id="val-total">0</div></div>
+            </div>
+            <div class="card">
+                <h3>Détails (Appareils & Clics)</h3>
+                <ul id="stats-details-list" style="padding-left:20px; line-height:1.8; color:#555;"></ul>
             </div>
         </div>
 
@@ -102,10 +110,18 @@
             const res = await fetch('/api/admin/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass }) });
             if (res.ok) {
                 token = pass;
+                // --- ASTUCE POUR NE PAS COMPTER TES VISITES ---
+                localStorage.setItem('isAdminBrowser', 'true');
+                // ----------------------------------------------
                 document.getElementById('loginModal').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
+                
+                const data = await res.json(); 
+                // Ordre important : on charge tout
+                renderStats(data); 
+                renderReviews(data.reviews); 
+                loadProducts();
                 loadReservations();
-                const data = await res.json(); renderStats(data); renderReviews(data.reviews); loadProducts();
             } else { document.getElementById('errorMsg').style.display = 'block'; }
         }
 
@@ -116,48 +132,76 @@
             btn.classList.add('active');
         }
 
-        // --- GESTION DES RÉSERVATIONS ---
-        async function loadReservations() {
-            const res = await fetch('/api/admin/reservations?password=' + token);
-            const reservations = await res.json();
-            const container = document.getElementById('reservations-list');
-            container.innerHTML = '';
-            if(reservations.length === 0) return container.innerHTML = '<p>Aucune commande récente.</p>';
+        // --- FONCTIONS D'AFFICHAGE (CORRIGÉES) ---
+        function renderStats(data) { 
+            document.getElementById('val-total').innerText = data.total; 
+            document.getElementById('val-today').innerText = data.today; 
+            
+            // Réparation de l'affichage des détails
+            const list = document.getElementById('stats-details-list');
+            list.innerHTML = '';
+            if(data.devices) data.devices.forEach(d => list.innerHTML += `<li>📱 ${d.device}: <b>${d.count}</b></li>`);
+            if(data.clicks) data.clicks.forEach(c => list.innerHTML += `<li>👆 Clic sur "${c.target}": <b>${c.count}</b></li>`);
+        }
 
-            reservations.forEach(r => {
+        function renderReviews(reviews) { 
+            const container = document.getElementById('reviews-list');
+            container.innerHTML = ''; // On efface "Chargement..."
+            if(!reviews || reviews.length === 0) return container.innerHTML = '<p>Aucun avis.</p>';
+            
+            reviews.forEach(r => {
                 container.innerHTML += `
-                <div class="res-row">
-                    <div class="res-info">
-                        <strong>${r.client_name}</strong>
-                        <small>${r.service_type} | RàV: ${r.date}</small>
-                        <small>📞 ${r.phone} | 📧 ${r.email}</small>
-                        <small style="color:var(--primary)">Payé: ${r.amount_paid}€</small>
-                    </div>
-                    <div>
-                        <select class="status-select status-${r.status}" onchange="updateStatus(${r.id}, this.value)">
-                            <option value="pending" ${r.status==='pending'?'selected':''}>⏳ En attente (A commander)</option>
-                            <option value="ordered" ${r.status==='ordered'?'selected':''}>🚚 Pièce Commandée</option>
-                            <option value="received" ${r.status==='received'?'selected':''}>📦 Pièce Reçue (Au magasin)</option>
-                            <option value="ready" ${r.status==='ready'?'selected':''}>✅ Terminé (A récupérer)</option>
-                            <option value="finished" ${r.status==='finished'?'selected':''}>🆗 Client a récupéré</option>
-                        </select>
-                    </div>
+                <div class="review-row" id="review-${r.id}">
+                    <div><strong>${r.author}</strong> ${'⭐'.repeat(r.rating)}<br><small>${r.content}</small></div>
+                    <button class="btn-delete" onclick="deleteReview(${r.id})">Supprimer</button>
                 </div>`;
             });
         }
 
-        async function updateStatus(id, newStatus) {
-            const res = await fetch(`/api/admin/reservations/${id}/status`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: token, status: newStatus })
-            });
-            if(res.ok) { alert("Statut mis à jour !"); loadReservations(); } else { alert("Erreur"); }
+        async function loadProducts() { 
+            const container = document.getElementById('products-list');
+            try {
+                const res = await fetch('/api/products');
+                const products = await res.json();
+                container.innerHTML = ''; // On efface "Chargement..."
+                
+                // Grouper par catégorie pour plus de clarté
+                const categories = {};
+                products.forEach(p => {
+                    if(!categories[p.category]) categories[p.category] = [];
+                    categories[p.category].push(p);
+                });
+
+                for(const cat in categories) {
+                    container.innerHTML += `<h4 style="margin: 20px 0 10px 0; color:var(--primary);">${cat}</h4>`;
+                    categories[cat].forEach(p => {
+                        container.innerHTML += `
+                        <div class="product-item">
+                            <span>${p.model}</span>
+                            <div>
+                                <input type="number" value="${p.price}" class="product-price-input" id="price-${p.id}">
+                                <button style="background:#34c759; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;" onclick="updatePrice(${p.id})">OK</button>
+                            </div>
+                        </div>`;
+                    });
+                }
+            } catch(e) { container.innerHTML = "Erreur chargement produits."; }
         }
 
-        // --- FONCTIONS EXISTANTES (Raccourcies pour la lisibilité) ---
-        function renderStats(data) { document.getElementById('val-total').innerText = data.total; document.getElementById('val-today').innerText = data.today; }
-        function renderReviews(reviews) { /* ... Même code qu'avant pour les avis ... */ }
-        async function loadProducts() { /* ... Même code qu'avant pour les produits ... */ }
+        async function loadReservations() {
+            const res = await fetch('/api/admin/reservations?password=' + token);
+            const reservations = await res.json();
+            const container = document.getElementById('reservations-list');
+            container.innerHTML = ''; // On efface "Chargement..."
+            if(reservations.length === 0) return container.innerHTML = '<p>Aucune commande récente.</p>';
+            // ... (le reste de la fonction loadReservations du message précédent était bon)
+            reservations.forEach(r => { container.innerHTML += `<div class="res-row"><div class="res-info"><strong>${r.client_name}</strong><small>${r.service_type} | ${r.date}</small><small>Code: <b>${r.tracking_code || 'N/A'}</b></small></div><div><select class="status-select status-${r.status}" onchange="updateStatus(${r.id}, this.value)"><option value="pending" ${r.status==='pending'?'selected':''}>⏳ En attente</option><option value="ordered" ${r.status==='ordered'?'selected':''}>🚚 Commandé</option><option value="received" ${r.status==='received'?'selected':''}>📦 Reçu</option><option value="ready" ${r.status==='ready'?'selected':''}>✅ Prêt</option><option value="finished" ${r.status==='finished'?'selected':''}>🆗 Récupéré</option></select></div></div>`; });
+        }
+
+        // --- ACTIONS ---
+        async function updatePrice(id) { const newPrice = document.getElementById(`price-${id}`).value; const res = await fetch(`/api/admin/products/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: token, price: newPrice }) }); if(res.ok) alert("Prix mis à jour !"); }
+        async function deleteReview(id) { if(!confirm("Supprimer ?")) return; const res = await fetch('/reviews/' + id, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: token }) }); if(res.ok) { document.getElementById('review-' + id).remove(); } }
+        async function updateStatus(id, newStatus) { const res = await fetch(`/api/admin/reservations/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: token, status: newStatus }) }); if(res.ok) { alert("Statut mis à jour !"); loadReservations(); } }
     </script>
 </body>
 </html>
