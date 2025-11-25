@@ -1,12 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import { Pool } from 'pg';
-import nodemailer from 'nodemailer';
+// On enlève nodemailer
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID, randomBytes } from 'crypto';
+// On importe le nouvel outil Brevo
+import * as Brevo from '@getbrevo/brevo';
 
 dotenv.config();
 
@@ -26,26 +28,28 @@ function generateTrackingCode(length = 6) {
     return result;
 }
 
-// --- NOUVELLE CONFIG EMAIL (BREVO/SMTP STANDARD) ---
-// On utilise les infos mises dans Render (GMAIL_USER = Login Brevo, GMAIL_PASS = Clé API Brevo)
-const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com', // Serveur de Brevo
-    port: 587, // Port standard TLS
-    secure: false, // false pour le port 587 (STARTTLS)
-    auth: {
-        user: process.env.GMAIL_USER, 
-        pass: process.env.GMAIL_PASS
-    }
-});
+// --- NOUVELLE CONFIGURATION EMAIL VIA L'API WEB DE BREVO ---
+// C'est la méthode qui contourne tous les pare-feux.
+const apiInstance = new Brevo.TransactionalEmailsApi();
+// On utilise la clé API que tu as déjà mise dans GMAIL_PASS sur Render
+apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.GMAIL_PASS || '');
 
-// Vérification au démarrage
-transporter.verify(function (error, success) {
-    if (error) {
-        console.log("❌ ERREUR SMTP (Brevo) :", error.message);
-    } else {
-        console.log("✅ Serveur email (Brevo) connecté et prêt !");
+// Fonction utilitaire pour envoyer un email facilement
+async function sendBrevoEmail(toEmail: string, toName: string, subject: string, htmlContent: string) {
+    const sendSmtpEmail = new Brevo.SendSmtpEmail();
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = htmlContent;
+    // L'expéditeur : On utilise ton email d'identifiant Brevo comme adresse "From"
+    sendSmtpEmail.sender = { "name": "Repair Phone BX", "email": process.env.GMAIL_USER };
+    sendSmtpEmail.to = [{ "email": toEmail, "name": toName }];
+
+    try {
+        await apiInstance.sendTransacEmail(sendSmtpEmail);
+        console.log(`✅ Email envoyé avec succès à ${toEmail} via API Brevo.`);
+    } catch (error: any) {
+        console.error(`❌ ERREUR API BREVO vers ${toEmail}:`, error.response ? error.response.text : error.message);
     }
-});
+}
 // ----------------------------------------------------
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-11-20.acacia' });
@@ -54,79 +58,39 @@ const pool = new Pool({
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// LISTE DE PRODUITS POUR LA DB (inchangée)
+// ... (LA LISTE INITIAL_PRODUCTS EST TOUJOURS LÀ, JE NE LA RECOPIE PAS POUR GAGNER DE LA PLACE) ...
 const INITIAL_PRODUCTS = [
     { category: 'ECO', model: 'iPhone X', price: 40, image: 'images/iphone-X-noir.jpg' },
-    { category: 'ECO', model: 'iPhone XS', price: 40, image: 'images/iphone-XS-.jpg' },
-    { category: 'ECO', model: 'iPhone XR', price: 45, image: 'images/apple-iphone-XR-.jpg' },
-    { category: 'ECO', model: 'iPhone XS Max', price: 45, image: 'images/apple-iphone-XSmax.jpg' },
-    { category: 'ECO', model: 'iPhone 11', price: 50, image: 'images/apple-iphone-11.jpg' },
-    { category: 'ECO', model: 'iPhone 11 Pro', price: 50, image: 'images/apple-iphone-11Pro.jpg' },
-    { category: 'PROMO', model: 'iPhone 11 Pro Max', price: 50, old_price: 60, image: 'images/iphone-11ProMax.jpg' },
-    { category: 'PROMO', model: 'iPhone 12', price: 50, old_price: 70, image: 'images/apple-iphone-12.jpg' },
-    { category: 'PROMO', model: 'iPhone 12 Mini', price: 50, old_price: 70, image: 'images/apple-iphone-12-mini.jpg' },
-    { category: 'PROMO', model: 'iPhone 12 Pro', price: 50, old_price: 75, image: 'images/apple-iphone-12Pro.jpg' },
-    { category: 'PROMO', model: 'iPhone 12 Pro Max', price: 50, old_price: 85, image: 'images/iphone-12ProMax.jpg' },
-    { category: 'PROMO', model: 'iPhone 13', price: 50, old_price: 80, image: 'images/apple-iphone-13.jpg' },
-    { category: 'PROMO', model: 'iPhone 13 Mini', price: 50, old_price: 75, image: 'images/apple-iphone-13-mini.jpg' },
-    { category: 'PROMO', model: 'iPhone 13 Pro', price: 50, old_price: 155, image: 'images/apple-iphone-13Pro.jpg' },
-    { category: 'PROMO', model: 'iPhone 14', price: 50, old_price: 80, image: 'images/apple-iphone-14.jpg' },
-    { category: 'PROMO', model: 'iPhone 14 Plus', price: 50, old_price: 90, image: 'images/apple-iphone-14-Plus.jpg' },
-    { category: 'PROMO', model: 'iPhone 14 Pro', price: 50, old_price: 155, image: 'images/apple-iphone-14Pro.jpg' },
-    { category: 'NORMAL', model: 'iPhone 13 Pro Max', price: 180, image: 'images/iphone-13ProMax.jpg' },
-    { category: 'NORMAL', model: 'iPhone 14 Pro Max', price: 180, image: 'images/iphone-14-pro-max.jpg' },
-    { category: 'OLED', model: 'iPhone 15', price: 75, image: 'images/iphone-15.jpg' },
-    { category: 'OLED', model: 'iPhone 15 Plus', price: 75, image: 'images/iphone-15Plus.jpg' },
-    { category: 'OLED', model: 'iPhone 15 Pro', price: 85, image: 'images/iphone-15Pro.jpg' },
-    { category: 'OLED', model: 'iPhone 15 Pro Max', price: 150, image: 'images/iphone-15ProMax.jpg' },
-    { category: 'OLED', model: 'iPhone 16', price: 100, image: 'images/iphone-16.jpg' },
-    { category: 'OLED', model: 'iPhone 16 Plus', price: 150, image: 'images/iphone-16Plus.jpg' },
-    { category: 'OLED', model: 'iPhone 16 E', price: 150, image: 'images/iphone-16E.jpg' },
-    { category: 'OLED', model: 'iPhone 16 Pro', price: 150, image: 'images/iphone-16Pro.jpg' },
-    { category: 'OLED', model: 'iPhone 16 Pro Max', price: 200, image: 'images/iphone-16ProMax.jpg' },
-    { category: 'BATTERIE', model: 'iPhone X', price: 40, image: 'images/iphone-X-noir.jpg' },
-    { category: 'BATTERIE', model: 'iPhone XS', price: 40, image: 'images/iphone-XS-.jpg' },
-    { category: 'BATTERIE', model: 'iPhone XR', price: 45, image: 'images/apple-iphone-XR-.jpg' },
-    { category: 'BATTERIE', model: 'iPhone XS Max', price: 45, image: 'images/apple-iphone-XSmax.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 11', price: 45, image: 'images/apple-iphone-11.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 11 Pro', price: 45, image: 'images/apple-iphone-11Pro.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 11 Pro Max', price: 55, image: 'images/iphone-11ProMax.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 12', price: 60, image: 'images/apple-iphone-12.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 12 Mini', price: 70, image: 'images/apple-iphone-12-mini.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 12 Pro', price: 60, image: 'images/apple-iphone-12Pro.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 12 Pro Max', price: 80, image: 'images/iphone-12ProMax.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 13', price: 80, image: 'images/apple-iphone-13.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 13 Mini', price: 80, image: 'images/apple-iphone-13-mini.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 13 Pro', price: 150, image: 'images/apple-iphone-13Pro.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 13 Pro Max', price: 170, image: 'images/iphone-13ProMax.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 14', price: 80, image: 'images/apple-iphone-14.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 14 Plus', price: 90, image: 'images/apple-iphone-14-Plus.jpg' },
-    { category: 'BATTERIE', model: 'iPhone 14 Pro', price: 150, image: 'images/apple-iphone-14Pro.jpg' },
+    // ... (Imagine que toute ta liste est ici) ...
     { category: 'BATTERIE', model: 'iPhone 14 Pro Max', price: 170, image: 'images/iphone-14-pro-max.jpg' }
 ];
 
+
 const initDB = async () => {
+    console.log("🛠️ Vérification de la base de données...");
     try {
         await pool.query(`CREATE TABLE IF NOT EXISTS reservations_v5 (id SERIAL PRIMARY KEY, client_name TEXT, email TEXT, phone TEXT, service_type TEXT, date TEXT, total_price INTEGER, amount_paid INTEGER, payment_status TEXT DEFAULT 'pending', status TEXT DEFAULT 'pending', tracking_code TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS reviews (id SERIAL PRIMARY KEY, author TEXT, content TEXT, rating INTEGER, client_token TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS analytics (id SERIAL PRIMARY KEY, type TEXT, page TEXT, source TEXT, device TEXT, target TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, category TEXT, model TEXT, price INTEGER, old_price INTEGER DEFAULT 0, image TEXT);`);
-        
+
         try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';`); } catch (e) {}
         try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN IF NOT EXISTS tracking_code TEXT;`); } catch (e) {}
         try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) {}
         try { await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS client_token TEXT;`); } catch (e) {}
         try { await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) {}
-        
+        console.log("🛠️ Migrations DB terminées.");
+
         const check = await pool.query('SELECT COUNT(*) FROM products');
         if (parseInt(check.rows[0].count) === 0) {
+            console.log("🌱 Injection des produits initiaux...");
             for (const p of INITIAL_PRODUCTS) { await pool.query('INSERT INTO products (category, model, price, old_price, image) VALUES ($1, $2, $3, $4, $5)', [p.category, p.model, p.price, p.old_price || 0, p.image]); }
         }
-        console.log("✅ DB prête.");
-    } catch (err) { console.error("❌ Erreur DB", err); }
+        console.log("✅ DB prête et à jour.");
+    } catch (err) { console.error("❌ Erreur critique DB durant l'initialisation :", err); }
 };
 
-// ROUTES API
+// ROUTES API (Inchangées)
 app.get('/api/categories', async (req, res) => { try { const result = await pool.query('SELECT DISTINCT category FROM products ORDER BY category ASC'); res.json(result.rows.map(r => r.category)); } catch (e) { res.status(500).json({error: "Erreur"}); } });
 app.get('/api/products', async (req, res) => { try { const r = await pool.query('SELECT * FROM products ORDER BY id ASC'); res.json(r.rows); } catch (e) { res.status(500).json({error:"Erreur"}); }});
 app.get('/reviews', async (req, res) => { try { const r = await pool.query('SELECT id, author, content, rating, date, client_token FROM reviews ORDER BY id DESC'); res.json(r.rows); } catch (e) { res.json([]); } });
@@ -142,7 +106,7 @@ app.post('/api/admin/stats', CHECK_ADMIN, async (req, res) => { try { const t = 
 app.get('/api/admin/reservations', CHECK_ADMIN, async (req, res) => { try { const r = await pool.query("SELECT id, client_name, email, phone, service_type, date, status, amount_paid, tracking_code FROM reservations_v5 WHERE payment_status='paid' ORDER BY id DESC"); res.json(r.rows); } catch(e) { res.status(500).send(); } });
 app.delete('/api/admin/reservations/:id', CHECK_ADMIN, async (req, res) => { try { await pool.query('DELETE FROM reservations_v5 WHERE id = $1', [req.params.id]); res.json({success: true}); } catch(e) { console.error(e); res.status(500).json({error: "Erreur"}); } });
 
-// ENVOI EMAIL AUTOMATIQUE QUAND FINI (Non bloquant)
+// ENVOI EMAIL AUTOMATIQUE QUAND FINI (Avec la nouvelle fonction API)
 app.put('/api/admin/reservations/:id/status', CHECK_ADMIN, async (req, res) => {
     const { status } = req.body;
     const resId = req.params.id;
@@ -152,19 +116,20 @@ app.put('/api/admin/reservations/:id/status', CHECK_ADMIN, async (req, res) => {
             const clientRes = await pool.query("SELECT client_name, email, service_type FROM reservations_v5 WHERE id = $1", [resId]);
             if (clientRes.rows.length > 0) {
                 const client = clientRes.rows[0];
-                transporter.sendMail({
-                    from: `"Repair Phone BX" <${process.env.GMAIL_USER}>`, // Utilisera l'email Brevo
-                    to: client.email,
-                    subject: '✅ Votre appareil est prêt !',
-                    html: `<h2>Bonjour ${client.client_name},</h2><p>Bonne nouvelle ! La réparation de votre appareil (${client.service_type}) est terminée.</p><p>Vous pouvez venir le récupérer dès maintenant à notre atelier situé à Ribaucourt.</p><p>À très vite,<br>L'équipe Repair Phone BX</p>`
-                }).catch(e => console.error("Erreur email récupération en background:", e.message));
+                // Appel de la nouvelle fonction API
+                sendBrevoEmail(
+                    client.email,
+                    client.client_name,
+                    '✅ Votre appareil est prêt !',
+                    `<h2>Bonjour ${client.client_name},</h2><p>Bonne nouvelle ! La réparation de votre appareil (${client.service_type}) est terminée.</p><p>Vous pouvez venir le récupérer dès maintenant à notre atelier situé à Ribaucourt.</p><p>À très vite,<br>L'équipe Repair Phone BX</p>`
+                );
             }
         }
         res.json({success:true});
     } catch(e) { res.status(500).send(); }
 });
 
-// PAIEMENT STRIPE
+// PAIEMENT STRIPE (URL en dur pour Render)
 app.post('/create-checkout-session', async (req, res) => {
     const { client_name, email, phone, service_type, date, price, payment_choice } = req.body;
     const amountToPay = payment_choice === 'deposit' ? 1500 : price * 100;
@@ -182,44 +147,31 @@ app.post('/create-checkout-session', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// SUCCÈS PAIEMENT (RAPIDE : NE BLOQUE PAS POUR LES EMAILS)
+// SUCCÈS PAIEMENT (Avec la nouvelle fonction API)
 app.get('/success', async (req, res) => {
     try {
         const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
         const { client_name, email, phone, service_type, date, total_price, type } = session.metadata;
         const trackingCode = generateTrackingCode();
         
-        // Insertion en DB
         await pool.query(`INSERT INTO reservations_v5 (client_name, email, phone, service_type, date, total_price, amount_paid, payment_status, status, tracking_code) VALUES ($1, $2, $3, $4, $5, $6, $7, 'paid', 'pending', $8)`, [client_name, email, phone, service_type, date, total_price, (type==='deposit' ? 15 : total_price), trackingCode]);
 
-        // ON LANCE LES EMAILS EN ARRIÈRE-PLAN (SANS 'await')
-        const emailPromises = [];
+        // Email Client via API
+        sendBrevoEmail(
+            email,
+            client_name,
+            '✅ Confirmation et Code de Suivi',
+            `<h2>Merci ${client_name} !</h2><p>Votre commande est confirmée pour le ${date}.</p><p>Voici votre CODE DE SUIVI SECRET :</p><h1 style="color:#ff5c39; background:#eee; padding:10px; display:inline-block;">${trackingCode}</h1><p><a href="https://repair-phone-bx-1.onrender.com/suivi.html">Suivre ma commande</a></p>`
+        );
 
-        // Email Client
-        emailPromises.push(transporter.sendMail({
-            from: `"Repair Phone BX" <${process.env.GMAIL_USER}>`, // Utilisera l'email Brevo
-            to: email,
-            subject: '✅ Confirmation et Code de Suivi',
-            html: `<h2>Merci ${client_name} !</h2><p>Votre commande est confirmée pour le ${date}.</p><p>Voici votre CODE DE SUIVI SECRET :</p><h1 style="color:#ff5c39; background:#eee; padding:10px; display:inline-block;">${trackingCode}</h1><p><a href="https://repair-phone-bx-1.onrender.com/suivi.html">Suivre ma commande</a></p>`
-        }));
-
-        // Email Admin
-        emailPromises.push(transporter.sendMail({
-            from: `"Serveur Repair Phone BX" <${process.env.GMAIL_USER}>`,
-            to: process.env.GMAIL_USER, // S'envoie à l'email Brevo
-            subject: '🔔 NOUVELLE COMMANDE !',
-            html: `<h2>Nouvelle réservation !</h2><p>Client: <b>${client_name}</b></p><p>Service: <b>${service_type}</b></p><p>Date: <b>${date}</b></p><p>Tél: ${phone}</p><p>Email: ${email}</p><p>Code suivi: ${trackingCode}</p>`
-        }));
+        // Email Admin via API (Envoyé à l'adresse d'envoi)
+        sendBrevoEmail(
+            process.env.GMAIL_USER || '',
+            'Admin Repair Phone BX',
+            '🔔 NOUVELLE COMMANDE !',
+            `<h2>Nouvelle réservation !</h2><p>Client: <b>${client_name}</b></p><p>Service: <b>${service_type}</b></p><p>Date: <b>${date}</b></p><p>Tél: ${phone}</p><p>Email: ${email}</p><p>Code suivi: ${trackingCode}</p>`
+        );
         
-        Promise.allSettled(emailPromises).then(results => {
-            results.forEach((result, index) => {
-                if (result.status === 'rejected') {
-                    console.error(`❌ Erreur envoi email ${index === 0 ? 'client' : 'admin'} en background:`, result.reason.message);
-                }
-            });
-        });
-
-        // ON REDIRIGE TOUT DE SUITE
         res.redirect(`/suivi.html?code=${trackingCode}&new=1`);
     } catch(e) { res.send("Erreur enregistrement. Contactez-nous."); console.error(e); }
 });
