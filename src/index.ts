@@ -18,24 +18,17 @@ app.use(cors());
 app.use(express.json());
 app.use('/images', express.static(path.join(__dirname, '../images')));
 
-// FONCTION POUR GÉNÉRER UN CODE COURT (ex: A7X2B9)
 function generateTrackingCode(length = 6) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
     const bytes = randomBytes(length);
-    for (let i = 0; i < length; i++) {
-        result += chars[bytes[i] % chars.length];
-    }
+    for (let i = 0; i < length; i++) { result += chars[bytes[i] % chars.length]; }
     return result;
 }
 
-// CONFIGURATION EMAIL (A REMPLIR SI TU VEUX QUE CA MARCHE VRAIMENT)
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // Ou autre
-    auth: {
-        user: 'TON_EMAIL_GMAIL@gmail.com', // <-- METS TON EMAIL ICI
-        pass: 'TON_MOT_DE_PASSE_DAPPLICATION' // <-- METS TON MDP D'APPLICATION GMAIL ICI (Pas le normal)
-    }
+    service: 'gmail',
+    auth: { user: 'TON_EMAIL_GMAIL@gmail.com', pass: 'TON_MOT_DE_PASSE_DAPPLICATION' }
 });
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-11-20.acacia' });
@@ -44,7 +37,6 @@ const pool = new Pool({
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// DONNÉES INITIALES (SEED)
 const INITIAL_PRODUCTS = [
     { category: 'ECO', model: 'iPhone X', price: 40, image: 'images/iphone-X-noir.jpg' },
     { category: 'ECO', model: 'iPhone XS', price: 40, image: 'images/iphone-XS-.jpg' },
@@ -95,16 +87,13 @@ const INITIAL_PRODUCTS = [
     { category: 'BATTERIE', model: 'iPhone 14 Pro Max', price: 170, image: 'images/iphone-14-pro-max.jpg' }
 ];
 
-// --- INIT DB (AVEC TRACKING CODE) ---
 const initDB = async () => {
     try {
-        // On ajoute tracking_code à la création de la table
         await pool.query(`CREATE TABLE IF NOT EXISTS reservations_v5 (id SERIAL PRIMARY KEY, client_name TEXT, email TEXT, phone TEXT, service_type TEXT, date TEXT, total_price INTEGER, amount_paid INTEGER, payment_status TEXT DEFAULT 'pending', status TEXT DEFAULT 'pending', tracking_code TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS reviews (id SERIAL PRIMARY KEY, author TEXT, content TEXT, rating INTEGER, client_token TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS analytics (id SERIAL PRIMARY KEY, type TEXT, page TEXT, source TEXT, device TEXT, target TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, category TEXT, model TEXT, price INTEGER, old_price INTEGER DEFAULT 0, image TEXT);`);
 
-        // MIGRATIONS AUTOMATIQUES (Important si la base existe déjà)
         try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN status TEXT DEFAULT 'pending';`); } catch (e) {}
         try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN tracking_code TEXT;`); } catch (e) {}
         try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) {}
@@ -119,7 +108,6 @@ const initDB = async () => {
     } catch (err) { console.error("❌ Erreur DB", err); }
 };
 
-// --- ROUTES API PUBLIQUES ---
 app.get('/api/products', async (req, res) => { try { const r = await pool.query('SELECT * FROM products ORDER BY id ASC'); res.json(r.rows); } catch (e) { res.status(500).json({error:"Erreur"}); }});
 app.get('/reviews', async (req, res) => { try { const r = await pool.query('SELECT id, author, content, rating, date, client_token FROM reviews ORDER BY id DESC'); res.json(r.rows); } catch (e) { res.json([]); } });
 app.post('/reviews', async (req, res) => { const t = randomUUID(); try { await pool.query('INSERT INTO reviews (author, content, rating, client_token) VALUES ($1, $2, $3, $4)', [req.body.author, req.body.content, req.body.rating, t]); res.json({ success: true, token: t }); } catch (e) { res.status(500).json({error: "Erreur DB"}); }});
@@ -132,27 +120,39 @@ app.delete('/reviews/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Erreur" }); }
 });
 app.post('/api/track', async (req, res) => { const { type, page, source, device, target } = req.body; try { await pool.query('INSERT INTO analytics (type, page, source, device, target) VALUES ($1, $2, $3, $4, $5)', [type, page, source, device, target]); res.json({ success: true }); } catch (e) { res.json({ success: false }); } });
-
-// --- NOUVELLE ROUTE SÉCURISÉE : SUIVI PAR CODE ---
 app.post('/api/my-order', async (req, res) => {
-    const { code } = req.body; // On demande le CODE maintenant
+    const { code } = req.body;
     if(!code) return res.status(400).json({error: "Code de suivi requis"});
     try {
-        // Recherche par tracking_code exact
         const result = await pool.query(`SELECT client_name, service_type, date, status, tracking_code FROM reservations_v5 WHERE tracking_code = $1 AND payment_status = 'paid'`, [code.toUpperCase()]);
         if(result.rows.length === 0) return res.status(404).json({error: "Code invalide ou commande non trouvée."});
         res.json(result.rows[0]);
     } catch (e) { res.status(500).json({error: "Erreur serveur"}); }
 });
 
-// --- ROUTES ADMIN ---
 const CHECK_ADMIN = (req, res, next) => { if(req.body.password === "MonCodeSecret123" || req.query.password === "MonCodeSecret123") next(); else res.status(403).json({error:"Accès refusé"}); };
-app.put('/api/admin/products/:id', CHECK_ADMIN, async (req, res) => { const { price } = req.body; try { await pool.query('UPDATE products SET price = $1 WHERE id = $2', [price, req.params.id]); res.json({success: true}); } catch (e) { res.status(500).json({error: "Erreur"}); } });
+
+// --- ROUTE MODIFIÉE POUR GÉRER PRIX ET CATÉGORIE ---
+app.put('/api/admin/products/:id', CHECK_ADMIN, async (req, res) => {
+    const { price, category } = req.body; // On récupère prix OU catégorie
+    const productId = req.params.id;
+    try {
+        if (price !== undefined) {
+            await pool.query('UPDATE products SET price = $1 WHERE id = $2', [price, productId]);
+        }
+        if (category !== undefined) {
+            // On nettoie le nom de la catégorie (majuscules, sans espaces inutiles)
+            const cleanCategory = category.trim().toUpperCase();
+            await pool.query('UPDATE products SET category = $1 WHERE id = $2', [cleanCategory, productId]);
+        }
+        res.json({success: true});
+    } catch (e) { console.error(e); res.status(500).json({error: "Erreur"}); }
+});
+
 app.post('/api/admin/stats', CHECK_ADMIN, async (req, res) => { try { const t = await pool.query("SELECT COUNT(*) FROM analytics WHERE type='view'"); const td = await pool.query("SELECT COUNT(*) FROM analytics WHERE type='view' AND date >= CURRENT_DATE"); const d = await pool.query("SELECT device, COUNT(*) FROM analytics WHERE type='view' GROUP BY device"); const c = await pool.query("SELECT target, COUNT(*) FROM analytics WHERE type='click' GROUP BY target"); const r = await pool.query("SELECT * FROM reviews ORDER BY id DESC"); res.json({ total: t.rows[0].count, today: td.rows[0].count, devices: d.rows, clicks: c.rows, reviews: r.rows }); } catch (e) { res.status(500).json({error: e}); } });
 app.get('/api/admin/reservations', CHECK_ADMIN, async (req, res) => { try { const r = await pool.query("SELECT id, client_name, email, phone, service_type, date, status, amount_paid, tracking_code FROM reservations_v5 WHERE payment_status='paid' ORDER BY id DESC"); res.json(r.rows); } catch(e) { res.status(500).send(); } });
 app.put('/api/admin/reservations/:id/status', CHECK_ADMIN, async (req, res) => { try { await pool.query("UPDATE reservations_v5 SET status = $1 WHERE id = $2", [req.body.status, req.params.id]); res.json({success:true}); } catch(e) { res.status(500).send(); } });
 
-// --- PAIEMENT STRIPE ---
 app.post('/create-checkout-session', async (req, res) => {
     const { client_name, email, phone, service_type, date, price, payment_choice } = req.body;
     const amountToPay = payment_choice === 'deposit' ? 1500 : price * 100; 
@@ -173,26 +173,16 @@ app.get('/success', async (req, res) => {
     try {
         const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
         const { client_name, email, phone, service_type, date, total_price, type } = session.metadata;
-        
-        // 1. Générer le code de suivi unique
         const trackingCode = generateTrackingCode();
-
-        // 2. Sauvegarder en DB avec le code
         await pool.query(`INSERT INTO reservations_v5 (client_name, email, phone, service_type, date, total_price, amount_paid, payment_status, status, tracking_code) VALUES ($1, $2, $3, $4, $5, $6, $7, 'paid', 'pending', $8)`, [client_name, email, phone, service_type, date, total_price, (type==='deposit' ? 15 : total_price), trackingCode]);
-        
-        // 3. TENTATIVE D'ENVOI D'EMAIL AVEC LE CODE (Si configuré plus haut)
         try {
             await transporter.sendMail({
-                from: '"Repair Phone BX" <TON_EMAIL@gmail.com>', // Mettre le même email qu'en haut
+                from: '"Repair Phone BX" <TON_EMAIL@gmail.com>', 
                 to: email,
                 subject: '✅ Confirmation et Code de Suivi',
                 html: `<h2>Merci ${client_name} !</h2><p>Votre commande est confirmée.</p><p>Voici votre CODE DE SUIVI SECRET pour voir l'avancement :</p><h1 style="color:#ff5c39; background:#eee; padding:10px; display:inline-block;">${trackingCode}</h1><p>Entrez ce code sur notre page de suivi : <a href="https://repair-phone-bx-1.onrender.com/suivi.html">Suivre ma commande</a></p>`
             });
-        } catch (mailErr) {
-            console.log("Erreur envoi email (normal si pas configuré) :", mailErr.message);
-        }
-
-        // 4. Redirection vers la page de suivi avec le code pré-rempli
+        } catch (mailErr) { console.log("Erreur envoi email (normal si pas configuré) :", mailErr.message); }
         res.redirect(`/suivi.html?code=${trackingCode}&new=1`);
     } catch(e) { res.send("Erreur enregistrement. Contactez-nous."); console.error(e); }
 });

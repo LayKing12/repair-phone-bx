@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Repair Phone BX</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root { --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --primary: #ff5c39; --danger: #ef4444; --success: #34c759; --warning: #f59e0b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
@@ -37,12 +38,19 @@
         /* Autres Styles */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .value { font-size: 32px; font-weight: 700; color: var(--primary); }
-        
-        .product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .product-price-input { width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; margin-right: 5px; }
-        
         .review-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eee; padding: 15px 0; }
         .btn-delete { background: var(--danger); color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+        /* --- NOUVEAUX STYLES POUR LE DRAG AND DROP --- */
+        .category-group { background: #f9fafb; border: 1px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+        .category-header { font-weight: 700; color: var(--primary); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 18px; }
+        .sortable-list { min-height: 50px; /* Important pour pouvoir déposer dans une liste vide */ padding: 10px; background: white; border-radius: 8px; border: 2px dashed #eee; }
+        .product-item-drag { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: white; border: 1px solid #eee; margin-bottom: 8px; border-radius: 8px; cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.1s; }
+        .product-item-drag:active { cursor: grabbing; transform: scale(1.02); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .product-price-input { width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; margin-right: 5px; }
+        .add-cat-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        .add-cat-box input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+        .add-cat-box button { padding: 10px 20px; background: var(--text); color: white; border: none; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -58,14 +66,14 @@
 
     <div id="dashboard" class="hidden">
         <div class="header">
-            <h1>📊 Dashboard</h1>
-            <button onclick="location.reload()" style="background:white; border:1px solid #ddd; padding:5px 10px; border-radius:5px; cursor:pointer;">🔄</button>
+            <h1>📊 Dashboard Pro</h1>
+            <button onclick="location.reload()" style="background:white; border:1px solid #ddd; padding:5px 10px; border-radius:5px; cursor:pointer;">🔄 Actualiser</button>
         </div>
 
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('reservations', this)">Gestion Réservations</button>
             <button class="tab-btn" onclick="switchTab('stats', this)">📊 Stats</button>
-            <button class="tab-btn" onclick="switchTab('products', this)">📦 Produits</button>
+            <button class="tab-btn" onclick="switchTab('products', this)">📦 Produits & Catégories</button>
             <button class="tab-btn" onclick="switchTab('reviews', this)">🛡️ Avis</button>
         </div>
 
@@ -89,8 +97,15 @@
 
         <div id="tab-products" class="hidden">
             <div class="card">
-                <h3>Gestion des Prix</h3>
-                <div id="products-list">Chargement...</div>
+                <h3>Gestion des Prix & Catégories</h3>
+                <p style="color:#666; font-size:14px; margin-bottom:20px;">💡 Astuce : Glissez les produits d'une catégorie à l'autre pour les déplacer. Créez des catégories pour Noël, Black Friday, etc.</p>
+                
+                <div class="add-cat-box">
+                    <input type="text" id="newCatInput" placeholder="Nom de la nouvelle catégorie (ex: NOEL, BLACKFRIDAY...)">
+                    <button onclick="addNewCategory()">Créer Catégorie</button>
+                </div>
+
+                <div id="categories-container">Chargement...</div>
             </div>
         </div>
 
@@ -110,14 +125,11 @@
             const res = await fetch('/api/admin/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass }) });
             if (res.ok) {
                 token = pass;
-                // --- ASTUCE POUR NE PAS COMPTER TES VISITES ---
                 localStorage.setItem('isAdminBrowser', 'true');
-                // ----------------------------------------------
                 document.getElementById('loginModal').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
                 
                 const data = await res.json(); 
-                // Ordre important : on charge tout
                 renderStats(data); 
                 renderReviews(data.reviews); 
                 loadProducts();
@@ -132,12 +144,10 @@
             btn.classList.add('active');
         }
 
-        // --- FONCTIONS D'AFFICHAGE (CORRIGÉES) ---
+        // --- RENDERING FUNCTIONS ---
         function renderStats(data) { 
             document.getElementById('val-total').innerText = data.total; 
             document.getElementById('val-today').innerText = data.today; 
-            
-            // Réparation de l'affichage des détails
             const list = document.getElementById('stats-details-list');
             list.innerHTML = '';
             if(data.devices) data.devices.forEach(d => list.innerHTML += `<li>📱 ${d.device}: <b>${d.count}</b></li>`);
@@ -146,9 +156,8 @@
 
         function renderReviews(reviews) { 
             const container = document.getElementById('reviews-list');
-            container.innerHTML = ''; // On efface "Chargement..."
+            container.innerHTML = '';
             if(!reviews || reviews.length === 0) return container.innerHTML = '<p>Aucun avis.</p>';
-            
             reviews.forEach(r => {
                 container.innerHTML += `
                 <div class="review-row" id="review-${r.id}">
@@ -158,48 +167,126 @@
             });
         }
 
-        async function loadProducts() { 
-            const container = document.getElementById('products-list');
-            try {
-                const res = await fetch('/api/products');
-                const products = await res.json();
-                container.innerHTML = ''; // On efface "Chargement..."
-                
-                // Grouper par catégorie pour plus de clarté
-                const categories = {};
-                products.forEach(p => {
-                    if(!categories[p.category]) categories[p.category] = [];
-                    categories[p.category].push(p);
-                });
-
-                for(const cat in categories) {
-                    container.innerHTML += `<h4 style="margin: 20px 0 10px 0; color:var(--primary);">${cat}</h4>`;
-                    categories[cat].forEach(p => {
-                        container.innerHTML += `
-                        <div class="product-item">
-                            <span>${p.model}</span>
-                            <div>
-                                <input type="number" value="${p.price}" class="product-price-input" id="price-${p.id}">
-                                <button style="background:#34c759; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;" onclick="updatePrice(${p.id})">OK</button>
-                            </div>
-                        </div>`;
-                    });
-                }
-            } catch(e) { container.innerHTML = "Erreur chargement produits."; }
-        }
-
         async function loadReservations() {
             const res = await fetch('/api/admin/reservations?password=' + token);
             const reservations = await res.json();
             const container = document.getElementById('reservations-list');
-            container.innerHTML = ''; // On efface "Chargement..."
+            container.innerHTML = ''; 
             if(reservations.length === 0) return container.innerHTML = '<p>Aucune commande récente.</p>';
-            // ... (le reste de la fonction loadReservations du message précédent était bon)
             reservations.forEach(r => { container.innerHTML += `<div class="res-row"><div class="res-info"><strong>${r.client_name}</strong><small>${r.service_type} | ${r.date}</small><small>Code: <b>${r.tracking_code || 'N/A'}</b></small></div><div><select class="status-select status-${r.status}" onchange="updateStatus(${r.id}, this.value)"><option value="pending" ${r.status==='pending'?'selected':''}>⏳ En attente</option><option value="ordered" ${r.status==='ordered'?'selected':''}>🚚 Commandé</option><option value="received" ${r.status==='received'?'selected':''}>📦 Reçu</option><option value="ready" ${r.status==='ready'?'selected':''}>✅ Prêt</option><option value="finished" ${r.status==='finished'?'selected':''}>🆗 Récupéré</option></select></div></div>`; });
         }
 
+        // --- NOUVELLE FONCTION DE CHARGEMENT DES PRODUITS (DRAG & DROP) ---
+        let allProducts = [];
+        let sortables = [];
+
+        async function loadProducts() { 
+            const container = document.getElementById('categories-container');
+            try {
+                const res = await fetch('/api/products');
+                allProducts = await res.json();
+                container.innerHTML = '';
+
+                // Grouper par catégorie
+                const categories = {};
+                allProducts.forEach(p => {
+                    if(!categories[p.category]) categories[p.category] = [];
+                    categories[p.category].push(p);
+                });
+
+                // Créer les blocs de catégories
+                for(const cat in categories) {
+                    createCategoryBlock(cat, categories[cat]);
+                }
+
+                // Activer le Drag & Drop sur toutes les listes créées
+                initSortables();
+
+            } catch(e) { container.innerHTML = "Erreur chargement produits."; }
+        }
+
+        function createCategoryBlock(catName, products = []) {
+            const container = document.getElementById('categories-container');
+            const catDiv = document.createElement('div');
+            catDiv.className = 'category-group';
+            catDiv.innerHTML = `<div class="category-header">${catName}</div>`;
+            
+            const list = document.createElement('div');
+            list.className = 'sortable-list';
+            // Important : on stocke le nom de la catégorie dans l'élément HTML
+            list.dataset.category = catName; 
+
+            products.forEach(p => {
+                const prodDiv = document.createElement('div');
+                prodDiv.className = 'product-item-drag';
+                // Important : on stocke l'ID du produit
+                prodDiv.dataset.id = p.id;
+                prodDiv.innerHTML = `
+                    <span>Now: <b>${p.category}</b> - ${p.model}</span>
+                    <div>
+                        <input type="number" value="${p.price}" class="product-price-input" id="price-${p.id}">
+                        <button style="background:#34c759; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;" onclick="updatePrice(${p.id}, event)">OK</button>
+                    </div>
+                `;
+                list.appendChild(prodDiv);
+            });
+            catDiv.appendChild(list);
+            container.appendChild(catDiv);
+        }
+
+        function initSortables() {
+            // Nettoyer les anciens sortables si existent
+            sortables.forEach(s => s.destroy());
+            sortables = [];
+
+            document.querySelectorAll('.sortable-list').forEach(list => {
+                const sortable = new Sortable(list, {
+                    group: 'shared', // Permet le partage entre listes
+                    animation: 150,
+                    ghostClass: 'bg-blue-100',
+                    // QUAND ON DÉPOSE UN ÉLÉMENT
+                    onEnd: async function (evt) {
+                        const productId = evt.item.dataset.id;
+                        const newCategory = evt.to.dataset.category;
+                        const oldCategory = evt.from.dataset.category;
+
+                        // Si la catégorie a changé
+                        if(newCategory !== oldCategory) {
+                            // On appelle l'API pour sauvegarder le changement
+                            await fetch(`/api/admin/products/${productId}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ password: token, category: newCategory })
+                            });
+                            // On met à jour le texte visuellement
+                            evt.item.querySelector('span b').innerText = newCategory;
+                        }
+                    }
+                });
+                sortables.push(sortable);
+            });
+        }
+
+        function addNewCategory() {
+            const input = document.getElementById('newCatInput');
+            const catName = input.value.trim().toUpperCase();
+            if(!catName) return alert("Entrez un nom");
+            // Vérifier si existe déjà
+            if(document.querySelector(`.sortable-list[data-category="${catName}"]`)) return alert("Cette catégorie existe déjà");
+            
+            createCategoryBlock(catName, []); // Créer un bloc vide
+            initSortables(); // Réactiver le drag & drop sur le nouveau bloc
+            input.value = '';
+        }
+
         // --- ACTIONS ---
-        async function updatePrice(id) { const newPrice = document.getElementById(`price-${id}`).value; const res = await fetch(`/api/admin/products/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: token, price: newPrice }) }); if(res.ok) alert("Prix mis à jour !"); }
+        async function updatePrice(id, event) { 
+            // Empêcher le clic de traverser et de gêner le drag & drop
+            event.stopPropagation(); 
+            const newPrice = document.getElementById(`price-${id}`).value; 
+            const res = await fetch(`/api/admin/products/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: token, price: newPrice }) }); 
+            if(res.ok) alert("Prix mis à jour !"); 
+        }
         async function deleteReview(id) { if(!confirm("Supprimer ?")) return; const res = await fetch('/reviews/' + id, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: token }) }); if(res.ok) { document.getElementById('review-' + id).remove(); } }
         async function updateStatus(id, newStatus) { const res = await fetch(`/api/admin/reservations/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: token, status: newStatus }) }); if(res.ok) { alert("Statut mis à jour !"); loadReservations(); } }
     </script>
