@@ -72,10 +72,22 @@
         #phoneInput { border-radius: 0 12px 12px 0; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 16px; width: 100%; font-weight: 700; cursor: pointer; border-radius: 14px; font-size: 16px; transition: transform 0.2s; }
         .btn-confirm:hover { transform: scale(1.02); }
+        
+        /* STYLES POUR LE CARROUSEL D'AVIS ET LA MAP */
         .reviews-section { max-width: 1200px; margin: 60px auto; background: white; padding: 50px; border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
+        .reviews-carousel { display: flex; overflow-x: auto; gap: 20px; padding-bottom: 20px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+        .reviews-carousel::-webkit-scrollbar { height: 8px; }
+        .reviews-carousel::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+        .review-card { min-width: 300px; background: #f9f9f9; padding: 20px; border-radius: 16px; scroll-snap-align: start; border: 1px solid #eee; }
+        .review-header { display: flex; align-items: center; margin-bottom: 10px; }
+        .review-avatar { width: 40px; height: 40px; background: #ddd; border-radius: 50%; margin-right: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #555; }
+        .review-author { font-weight: 600; }
+        .review-stars { color: #FFD700; margin-left: auto; }
+        .review-text { font-size: 14px; color: #555; line-height: 1.5; }
         .review-form input, .review-form textarea, .review-form select { border: 1px solid #d2d2d7; border-radius: 12px; padding: 12px; width: 100%; margin-bottom: 10px; font-family: inherit; }
         .review-item { border-bottom: 1px solid #eee; padding: 20px 0; position: relative; }
-        @media screen and (max-width: 768px) { .container { flex-direction: column; padding: 15px; } .sidebar { display: none; } .modal { width: 90%; padding: 25px; } .grid { grid-template-columns: 1fr; } input, select, textarea { font-size: 16px !important; } header { padding: 15px 20px; } }
+
+        @media screen and (max-width: 768px) { .container { flex-direction: column; padding: 15px; } .sidebar { display: none; } .modal { width: 90%; padding: 25px; } .grid { grid-template-columns: 1fr; } input, select, textarea { font-size: 16px !important; } header { padding: 15px 20px; } .review-card { min-width: 260px; } }
     </style>
 </head>
 <body>
@@ -110,7 +122,10 @@
     </div>
 
     <div class="reviews-section" id="avis">
-        <h3>Avis Clients</h3>
+        <h3>Ils nous font confiance</h3>
+        <div class="reviews-carousel" id="fake-reviews-carousel"></div>
+
+        <h3 style="margin-top: 50px;">Laissez votre avis</h3>
         <div class="review-form">
             <input type="text" id="reviewName" placeholder="Votre nom">
             <select id="reviewRating">
@@ -129,7 +144,7 @@
     <div style="max-width: 1200px; margin: 0 auto; padding: 20px; margin-bottom: 40px;">
         <h2 style="text-align:center; color:var(--dark); margin-bottom:20px;">📍 Nous trouver</h2>
         <div style="width: 100%; height: 400px; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05);">
-            <iframe src="http://googleusercontent.com/maps.google.com/0" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2518.703381134867!2d4.3352223!3d50.855077!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c3c38c2a692d1d%3A0x63311283267161!2sRibaucourt!5e0!3m2!1sfr!2sbe!4v1700000000000!5m2!1sfr!2sbe" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
         </div>
     </div>
 
@@ -142,74 +157,83 @@
         const techLCD = `<strong>Norme :</strong> Écran LCD LTPS (Qualité/Prix)<br><strong>Solidité :</strong> Verre renforcé.<br><strong>Couleurs :</strong> Gamut P3 vives.<br><strong>Réactivité :</strong> Tactile fluide.`;
         const techOLED = `<strong>Technologie :</strong> Écran COMPATIBLE OLED<br><strong>Qualité :</strong> Affichage exceptionnel d'origine.`;
 
-        // MAPPING DES EMOJIS ET TEXTES POUR LA SIDEBAR
         const categoryDisplay = {
             'ECO': { emoji: '🍏', text: 'GAMME ÉCO (Petits Prix)' },
             'PROMO': { emoji: '🔥', text: 'PROMO FLASH' },
             'NORMAL': { emoji: '📱', text: 'ÉCRANS (Max)' },
             'OLED': { emoji: '💎', text: 'GAMME OLED (15/16)' },
             'BATTERIE': { emoji: '🔋', text: 'BATTERIES' }
-            // Les nouvelles catégories auront un emoji par défaut
         };
 
-        // --- NOUVELLE FONCTION PRINCIPALE : CHARGER LA STRUCTURE DYNAMIQUEMENT ---
+        // --- LISTE DES FAUX AVIS ---
+        const fakeReviews = [
+            { name: "Sarah M.", rating: 5, text: "Super rapide ! Mon iPhone 11 était cassé, réparé en 30 min devant moi. Top." },
+            { name: "Karim B.", rating: 5, text: "Prix imbattable sur Bruxelles pour un écran OLED d'iPhone 13 Pro. Je recommande." },
+            { name: "Julie D.", rating: 4, text: "Très pro, travail soigné. La nouvelle batterie change la vie !" },
+            { name: "Mohamed A.", rating: 5, text: "Service au top à Ribaucourt. Honnête et efficace, merci pour l'iPhone XR." },
+            { name: "Thomas L.", rating: 5, text: "J'ai profité de la promo écran, rien à dire, c'est nickel." },
+            { name: "Sofia E.", rating: 5, text: "Super accueil, explication claire. Mon iPhone 14 est comme neuf." },
+            { name: "Jonathan V.", rating: 4, text: "Bon rapport qualité prix pour le changement d'écran de mon fils." },
+            { name: "Amine K.", rating: 5, text: "Le meilleur du quartier. Rapide, pas cher et garanti. Foncez." }
+        ];
+
+        function loadFakeReviews() {
+            const carousel = document.getElementById('fake-reviews-carousel');
+            carousel.innerHTML = fakeReviews.map(r => `
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="review-avatar">${r.name.charAt(0)}</div>
+                        <span class="review-author">${r.name}</span>
+                        <span class="review-stars">${'⭐'.repeat(r.rating)}</span>
+                    </div>
+                    <p class="review-text">${r.text}</p>
+                </div>
+            `).join('');
+        }
+
         async function loadDynamicContent() {
             try {
-                // 1. Obtenir la liste des catégories existantes
                 const catRes = await fetch(API_URL + '/api/categories');
-                const categories = await catRes.json();
+                let categories = await catRes.json();
+
+                // --- MODIFICATION DE L'ORDRE : BATTERIE À LA FIN ---
+                const battIndex = categories.indexOf('BATTERIE');
+                if (battIndex > -1) {
+                    categories.splice(battIndex, 1); // On l'enlève
+                    categories.push('BATTERIE'); // On le remet à la fin
+                }
+                // ---------------------------------------------------
 
                 const sidebarList = document.getElementById('sidebar-list');
                 const mainContent = document.getElementById('main-content');
-
-                // Vider le contenu de chargement
                 sidebarList.innerHTML = '';
                 mainContent.innerHTML = '';
 
-                // 2. Construire la sidebar et les sections
                 categories.forEach(cat => {
-                    const displayInfo = categoryDisplay[cat] || { emoji: '📂', text: cat }; // Fallback si nouvelle catégorie
-                    
-                    // Lien Sidebar
+                    const displayInfo = categoryDisplay[cat] || { emoji: '📂', text: cat };
                     sidebarList.innerHTML += `<li onclick="scrollToSection('${cat}')">${displayInfo.emoji} ${displayInfo.text}</li>`;
-
-                    // Section principale
-                    mainContent.innerHTML += `
-                        <h2 class="category-title" id="${cat}">${displayInfo.text}</h2>
-                        <div id="${cat}-grid" class="grid"></div>
-                    `;
+                    mainContent.innerHTML += `<h2 class="category-title" id="${cat}">${displayInfo.text}</h2><div id="${cat}-grid" class="grid"></div>`;
                 });
 
-                // Ajouter le lien Avis à la fin de la sidebar
                 sidebarList.innerHTML += `<li onclick="scrollToSection('avis')">⭐ AVIS CLIENTS</li>`;
-
-                // 3. Maintenant que les grilles existent, charger les produits dedans
                 loadProducts(categories);
+                loadFakeReviews(); // Charger le carrousel
 
-            } catch (e) {
-                console.error("Erreur chargement dynamique", e);
-                document.getElementById('main-content').innerHTML = "<p style='text-align:center; padding:50px; color:red;'>Erreur de chargement. Réessayez.</p>";
-            }
+            } catch (e) { console.error("Erreur chargement dynamique", e); }
         }
 
-        // --- FONCTION MODIFIÉE POUR REMPLIR LES GRILLES DYNAMIQUES ---
         async function loadProducts(categories) {
             try {
                 const res = await fetch(API_URL + '/api/products');
                 const products = await res.json();
-
                 categories.forEach(cat => {
                     const catProducts = products.filter(p => p.category === cat);
                     const grid = document.getElementById(`${cat}-grid`);
-                    if(grid) {
-                        grid.innerHTML = catProducts.map(createCard).join('');
-                    }
+                    if(grid) grid.innerHTML = catProducts.map(createCard).join('');
                 });
-                
             } catch (e) { console.error("Erreur produits", e); }
         }
 
-        // Lancer le chargement dynamique au démarrage
         loadDynamicContent();
 
         function createCard(item) {
@@ -220,11 +244,9 @@
             else if (type === "OLED") { badge = `<div class="badge badge-new">NOUVEAU</div>`; desc = "Remplacement Écran OLED Premium"; tech = techOLED; } 
             else if (type === "NORMAL") { desc = "Remplacement Écran LCD Premium"; tech = techLCD; } 
             else if (type.includes("BATTERIE")) { badge = `<div class="badge">ORIGINE</div>`; desc = "Batterie neuve haute capacité"; }
-            else { desc = "Réparation Premium"; tech = techLCD; } // Pour les nouvelles catégories
-
+            else { desc = "Réparation Premium"; tech = techLCD; }
             let price = item.price;
             let serviceName = type.includes("BATTERIE") ? `${item.model} - Batterie` : `${item.model} - Écran`;
-            
             return `<div class="card"><div class="card-img-container">${badge}<img src="${item.image}" class="card-img" alt="${item.model}" loading="lazy"></div><div class="card-body"><div class="card-title">${serviceName}</div><div class="card-desc">${desc}</div>${!type.includes("BATTERIE") ? `<button class="toggle-tech" onclick="toggleTech(this)">Voir détails techniques</button><div class="tech-details">${tech}</div>` : ''}<div class="price-row">${oldPriceHtml}<span class="price-current ${type === 'PROMO' ? 'price-promo' : ''}">${price} €</span></div><button class="btn-buy" onclick="openBooking('${serviceName}', ${price}, '${type}')">RÉSERVER</button></div></div>`;
         }
 
