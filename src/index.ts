@@ -26,6 +26,7 @@ function generateTrackingCode(length = 6) {
     return result;
 }
 
+// CONFIG EMAIL (A REMPLIR)
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: { user: 'TON_EMAIL_GMAIL@gmail.com', pass: 'TON_MOT_DE_PASSE_DAPPLICATION' }
@@ -37,6 +38,7 @@ const pool = new Pool({
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
+// TA LISTE COMPLÈTE DE PRODUITS
 const INITIAL_PRODUCTS = [
     { category: 'ECO', model: 'iPhone X', price: 40, image: 'images/iphone-X-noir.jpg' },
     { category: 'ECO', model: 'iPhone XS', price: 40, image: 'images/iphone-XS-.jpg' },
@@ -94,6 +96,7 @@ const initDB = async () => {
         await pool.query(`CREATE TABLE IF NOT EXISTS analytics (id SERIAL PRIMARY KEY, type TEXT, page TEXT, source TEXT, device TEXT, target TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, category TEXT, model TEXT, price INTEGER, old_price INTEGER DEFAULT 0, image TEXT);`);
 
+        // 🛠️ MIGRATIONS DE RÉPARATION 🛠️
         try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN status TEXT DEFAULT 'pending';`); } catch (e) {}
         try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN tracking_code TEXT;`); } catch (e) {}
         try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) {}
@@ -107,6 +110,16 @@ const initDB = async () => {
         console.log("✅ DB prête.");
     } catch (err) { console.error("❌ Erreur DB", err); }
 };
+
+// --- NOUVELLE ROUTE : LISTER LES CATÉGORIES UNIQUES ---
+app.get('/api/categories', async (req, res) => {
+    try {
+        // On récupère toutes les catégories distinctes qui existent dans la table produits
+        const result = await pool.query('SELECT DISTINCT category FROM products ORDER BY category ASC');
+        // On renvoie juste un tableau de strings : ["BATTERIE", "ECO", "TEST", etc.]
+        res.json(result.rows.map(r => r.category));
+    } catch (e) { res.status(500).json({error: "Erreur"}); }
+});
 
 app.get('/api/products', async (req, res) => { try { const r = await pool.query('SELECT * FROM products ORDER BY id ASC'); res.json(r.rows); } catch (e) { res.status(500).json({error:"Erreur"}); }});
 app.get('/reviews', async (req, res) => { try { const r = await pool.query('SELECT id, author, content, rating, date, client_token FROM reviews ORDER BY id DESC'); res.json(r.rows); } catch (e) { res.json([]); } });
@@ -132,19 +145,13 @@ app.post('/api/my-order', async (req, res) => {
 
 const CHECK_ADMIN = (req, res, next) => { if(req.body.password === "MonCodeSecret123" || req.query.password === "MonCodeSecret123") next(); else res.status(403).json({error:"Accès refusé"}); };
 
-// --- ROUTE MODIFIÉE POUR GÉRER PRIX ET CATÉGORIE ---
+// Route admin modifiée pour gérer prix ET catégorie
 app.put('/api/admin/products/:id', CHECK_ADMIN, async (req, res) => {
-    const { price, category } = req.body; // On récupère prix OU catégorie
+    const { price, category } = req.body;
     const productId = req.params.id;
     try {
-        if (price !== undefined) {
-            await pool.query('UPDATE products SET price = $1 WHERE id = $2', [price, productId]);
-        }
-        if (category !== undefined) {
-            // On nettoie le nom de la catégorie (majuscules, sans espaces inutiles)
-            const cleanCategory = category.trim().toUpperCase();
-            await pool.query('UPDATE products SET category = $1 WHERE id = $2', [cleanCategory, productId]);
-        }
+        if (price !== undefined) await pool.query('UPDATE products SET price = $1 WHERE id = $2', [price, productId]);
+        if (category !== undefined) await pool.query('UPDATE products SET category = $1 WHERE id = $2', [category.trim().toUpperCase(), productId]);
         res.json({success: true});
     } catch (e) { console.error(e); res.status(500).json({error: "Erreur"}); }
 });
