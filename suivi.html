@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi de Réparation - Repair Phone BX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #ff5c39; --bg: #fbfbfd; --text: #1d1d1f; --success: #34c759; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 500px; text-align: center; }
+        h1 { color: var(--primary); margin-bottom: 10px; }
+        .code-input { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 12px; margin-bottom: 15px; font-size: 20px; text-align: center; letter-spacing: 2px; font-weight: bold; text-transform: uppercase; }
+        .code-input:focus { border-color: var(--primary); outline: none; }
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
+        
+        /* Timeline Style */
+        .timeline { text-align: left; margin-top: 40px; }
+        .step { padding: 20px; border-left: 3px solid #eee; position: relative; color: #999; }
+        .step::before { content: ''; width: 15px; height: 15px; background: #eee; border-radius: 50%; position: absolute; left: -9px; top: 20px; }
+        .step.active { color: var(--text); border-color: var(--success); }
+        .step.active::before { background: var(--success); box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.2); }
+        .step h3 { margin: 0 0 5px 0; }
+        
+        .hidden { display: none; }
+        .success-message { background: #dcfce7; color: #166534; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="newOrderMsg" class="success-message hidden">✅ Paiement réussi ! Voici votre suivi. Un email avec ce code vous a été envoyé.</div>
+
+        <h1>Suivi de Réparation 🛠️</h1>
+        <p>Entrez le code secret reçu par email.</p>
+
+        <div id="searchForm">
+            <input type="text" id="codeInput" class="code-input" placeholder="Ex: A7X2B9" maxlength="6">
+            <button onclick="trackOrder()">Voir mon suivi</button>
+        </div>
+
+        <div id="timelineResult" class="timeline hidden">
+            <h2 id="serviceTitle">iPhone 12 - Écran</h2>
+            <p style="color:#666; font-size:14px;">Code : <strong id="displayCode"></strong></p>
+            
+            <div class="step" id="step-pending">
+                <h3>⏳ En attente de traitement</h3>
+                <p>Votre commande est enregistrée, nous allons commander la pièce.</p>
+            </div>
+            <div class="step" id="step-ordered">
+                <h3>🚚 Pièce Commandée</h3>
+                <p>La pièce est en route vers notre atelier.</p>
+            </div>
+            <div class="step" id="step-received">
+                <h3>📦 Pièce Reçue</h3>
+                <p>Tout est prêt. RDV prévu le <span id="rdvDate"></span>.</p>
+            </div>
+            <div class="step" id="step-ready">
+                <h3>✅ Terminé !</h3>
+                <p>Votre appareil est prêt à être récupéré au magasin.</p>
+            </div>
+        </div>
+
+        <p id="errorMsg" style="color:red; margin-top:20px; font-weight:bold;" class="hidden"></p>
+        <a href="/" style="display:block; margin-top:30px; color:#999; text-decoration:none;">Retour au site</a>
+    </div>
+
+    <script>
+        // Vérifier si on vient de la page de paiement avec un code
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.get('new')) document.getElementById('newOrderMsg').classList.remove('hidden');
+        if(urlParams.get('code')) {
+            document.getElementById('codeInput').value = urlParams.get('code');
+            trackOrder();
+        }
+
+        async function trackOrder() {
+            const code = document.getElementById('codeInput').value.trim().toUpperCase();
+            if(!code || code.length < 6) return alert("Code invalide (6 caractères)");
+            
+            document.getElementById('searchForm').style.opacity = '0.5';
+            document.getElementById('errorMsg').classList.add('hidden');
+            document.getElementById('timelineResult').classList.add('hidden');
+
+            // On envoie le CODE au lieu de l'email
+            const res = await fetch('/api/my-order', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ code }) 
+            });
+
+            document.getElementById('searchForm').style.opacity = '1';
+
+            if(res.ok) {
+                const data = await res.json();
+                showTimeline(data);
+            } else {
+                const err = await res.json();
+                document.getElementById('errorMsg').innerText = err.error;
+                document.getElementById('errorMsg').classList.remove('hidden');
+            }
+        }
+
+        function showTimeline(data) {
+            document.getElementById('timelineResult').classList.remove('hidden');
+            document.getElementById('serviceTitle').innerText = data.service_type;
+            document.getElementById('rdvDate').innerText = data.date;
+            document.getElementById('displayCode').innerText = data.tracking_code;
+
+            // Reset
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+
+            // Logique d'activation des étapes
+            const s = data.status;
+            document.getElementById('step-pending').classList.add('active');
+            if(s === 'ordered' || s === 'received' || s === 'ready' || s === 'finished') {
+                document.getElementById('step-ordered').classList.add('active');
+            }
+            if(s === 'received' || s === 'ready' || s === 'finished') {
+                document.getElementById('step-received').classList.add('active');
+            }
+            if(s === 'ready' || s === 'finished') {
+                document.getElementById('step-ready').classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -116,6 +116,7 @@
             .modal { width: 90%; padding: 25px; } 
             .grid { grid-template-columns: 1fr; }
             input, select, textarea { font-size: 16px !important; } /* Empêche le zoom auto */
+            header { padding: 15px 20px; } /* Ajustement header mobile */
         }
     </style>
 </head>
@@ -123,7 +124,13 @@
 
     <header>
         <div class="logo">repairphonebx<span style="color:var(--primary)">.</span></div>
-        <button class="btn-contact" id="contactBtn" onclick="showNumber()">Nous contacter</button>
+        
+        <div style="display:flex; align-items:center; gap:20px;">
+            <a href="/suivi.html" style="text-decoration:none; color:var(--dark); font-weight:600; font-size:14px; display:flex; align-items:center;">
+                🔍 <span style="margin-left:5px;">Suivi de commande</span>
+            </a>
+            <button class="btn-contact" id="contactBtn" onclick="showNumber()">Nous contacter</button>
+        </div>
     </header>
 
     <div class="hero">
@@ -510,7 +517,9 @@
     </script>
 
     <footer style="text-align:center; padding:30px; color:#999; font-size:12px; border-top:1px solid #eee;">
-        © 2025 Repair Phone BX • <a href="#" onclick="document.getElementById('legalModal').style.display='flex';return false;" style="color:#999">Mentions Légales & CGV</a>
+        © 2025 Repair Phone BX • 
+        <a href="/suivi.html" style="color:#999; text-decoration:none;">Suivi</a> • 
+        <a href="#" onclick="document.getElementById('legalModal').style.display='flex';return false;" style="color:#999">Mentions Légales & CGV</a>
         <br><br>
         <a href="/admin-secret-dashboard" style="color: #eee; text-decoration: none;">Admin</a>
     </footer>

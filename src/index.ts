@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
 
 dotenv.config();
 
@@ -18,14 +18,33 @@ app.use(cors());
 app.use(express.json());
 app.use('/images', express.static(path.join(__dirname, '../images')));
 
-// CONFIGURATION
+// FONCTION POUR GÉNÉRER UN CODE COURT (ex: A7X2B9)
+function generateTrackingCode(length = 6) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    const bytes = randomBytes(length);
+    for (let i = 0; i < length; i++) {
+        result += chars[bytes[i] % chars.length];
+    }
+    return result;
+}
+
+// CONFIGURATION EMAIL (A REMPLIR SI TU VEUX QUE CA MARCHE VRAIMENT)
+const transporter = nodemailer.createTransport({
+    service: 'gmail', // Ou autre
+    auth: {
+        user: 'TON_EMAIL_GMAIL@gmail.com', // <-- METS TON EMAIL ICI
+        pass: 'TON_MOT_DE_PASSE_DAPPLICATION' // <-- METS TON MDP D'APPLICATION GMAIL ICI (Pas le normal)
+    }
+});
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-11-20.acacia' });
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// DONNÉES INITIALES (Backup)
+// DONNÉES INITIALES (SEED)
 const INITIAL_PRODUCTS = [
     { category: 'ECO', model: 'iPhone X', price: 40, image: 'images/iphone-X-noir.jpg' },
     { category: 'ECO', model: 'iPhone XS', price: 40, image: 'images/iphone-XS-.jpg' },
@@ -76,119 +95,71 @@ const INITIAL_PRODUCTS = [
     { category: 'BATTERIE', model: 'iPhone 14 Pro Max', price: 170, image: 'images/iphone-14-pro-max.jpg' }
 ];
 
-// --- INIT DB (VERSION CORRECTIVE) ---
+// --- INIT DB (AVEC TRACKING CODE) ---
 const initDB = async () => {
     try {
-        await pool.query(`CREATE TABLE IF NOT EXISTS reservations_v5 (id SERIAL PRIMARY KEY, client_name TEXT, email TEXT, phone TEXT, service_type TEXT, date TEXT, total_price INTEGER, amount_paid INTEGER, payment_status TEXT DEFAULT 'pending');`);
+        // On ajoute tracking_code à la création de la table
+        await pool.query(`CREATE TABLE IF NOT EXISTS reservations_v5 (id SERIAL PRIMARY KEY, client_name TEXT, email TEXT, phone TEXT, service_type TEXT, date TEXT, total_price INTEGER, amount_paid INTEGER, payment_status TEXT DEFAULT 'pending', status TEXT DEFAULT 'pending', tracking_code TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS reviews (id SERIAL PRIMARY KEY, author TEXT, content TEXT, rating INTEGER, client_token TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS analytics (id SERIAL PRIMARY KEY, type TEXT, page TEXT, source TEXT, device TEXT, target TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
         await pool.query(`CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, category TEXT, model TEXT, price INTEGER, old_price INTEGER DEFAULT 0, image TEXT);`);
 
-        // --- 🛠️ CORRECTION AUTOMATIQUE DE LA BASE DE DONNÉES 🛠️ ---
-        // Ces lignes vont ajouter les colonnes manquantes si la table existe déjà
-        try { await pool.query(`ALTER TABLE reviews ADD COLUMN client_token TEXT;`); } catch (e) { /* ignore si existe deja */ }
-        try { await pool.query(`ALTER TABLE reviews ADD COLUMN date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) { /* ignore si existe deja */ }
+        // MIGRATIONS AUTOMATIQUES (Important si la base existe déjà)
+        try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN status TEXT DEFAULT 'pending';`); } catch (e) {}
+        try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN tracking_code TEXT;`); } catch (e) {}
+        try { await pool.query(`ALTER TABLE reservations_v5 ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) {}
+        try { await pool.query(`ALTER TABLE reviews ADD COLUMN client_token TEXT;`); } catch (e) {}
+        try { await pool.query(`ALTER TABLE reviews ADD COLUMN date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch (e) {}
         
-        // Seed Produits si vide
         const check = await pool.query('SELECT COUNT(*) FROM products');
         if (parseInt(check.rows[0].count) === 0) {
-            console.log("🌱 Base vide, insertion produits...");
-            for (const p of INITIAL_PRODUCTS) {
-                await pool.query(
-                    'INSERT INTO products (category, model, price, old_price, image) VALUES ($1, $2, $3, $4, $5)',
-                    [p.category, p.model, p.price, p.old_price || 0, p.image]
-                );
-            }
-            console.log("✅ Produits insérés !");
+            for (const p of INITIAL_PRODUCTS) { await pool.query('INSERT INTO products (category, model, price, old_price, image) VALUES ($1, $2, $3, $4, $5)', [p.category, p.model, p.price, p.old_price || 0, p.image]); }
         }
-        console.log("✅ Base de données prête et corrigée !");
+        console.log("✅ DB prête.");
     } catch (err) { console.error("❌ Erreur DB", err); }
 };
 
-// --- ROUTES API PRODUITS ---
-app.get('/api/products', async (req, res) => {
-    try { const result = await pool.query('SELECT * FROM products ORDER BY id ASC'); res.json(result.rows); } 
-    catch (e) { res.status(500).json({error: "Erreur"}); }
-});
-app.put('/api/admin/products/:id', async (req, res) => {
-    const { password, price } = req.body;
-    if(password !== "MonCodeSecret123") return res.status(403).json({error: "Accès refusé"});
-    try { await pool.query('UPDATE products SET price = $1 WHERE id = $2', [price, req.params.id]); res.json({success: true}); } catch (e) { res.status(500).json({error: "Erreur"}); }
-});
-
-// --- ROUTES AVIS ---
-app.get('/reviews', async (req, res) => { 
+// --- ROUTES API PUBLIQUES ---
+app.get('/api/products', async (req, res) => { try { const r = await pool.query('SELECT * FROM products ORDER BY id ASC'); res.json(r.rows); } catch (e) { res.status(500).json({error:"Erreur"}); }});
+app.get('/reviews', async (req, res) => { try { const r = await pool.query('SELECT id, author, content, rating, date, client_token FROM reviews ORDER BY id DESC'); res.json(r.rows); } catch (e) { res.json([]); } });
+app.post('/reviews', async (req, res) => { const t = randomUUID(); try { await pool.query('INSERT INTO reviews (author, content, rating, client_token) VALUES ($1, $2, $3, $4)', [req.body.author, req.body.content, req.body.rating, t]); res.json({ success: true, token: t }); } catch (e) { res.status(500).json({error: "Erreur DB"}); }});
+app.delete('/reviews/:id', async (req, res) => { 
+    const { token, password } = req.body; const reviewId = req.params.id;
     try {
-        const r = await pool.query('SELECT id, author, content, rating, date, client_token FROM reviews ORDER BY id DESC'); 
-        res.json(r.rows); 
-    } catch (e) { res.json([]); } // Retourne vide si erreur
-});
-
-app.post('/reviews', async (req, res) => { 
-    const token = randomUUID(); 
-    try {
-        await pool.query('INSERT INTO reviews (author, content, rating, client_token) VALUES ($1, $2, $3, $4)', 
-        [req.body.author, req.body.content, req.body.rating, token]); 
-        res.json({ success: true, token: token }); 
-    } catch (e) { res.status(500).json({error: "Erreur DB"}); }
-});
-
-// ROUTE SUPPRESSION
-app.delete('/reviews/:id', async (req, res) => {
-    const { token, password } = req.body;
-    const reviewId = req.params.id;
-    try {
-        if (password === "MonCodeSecret123") {
-            await pool.query('DELETE FROM reviews WHERE id = $1', [reviewId]);
-            return res.json({ success: true, by: 'admin' });
-        }
-        if (token) {
-            const check = await pool.query('SELECT * FROM reviews WHERE id = $1 AND client_token = $2', [reviewId, token]);
-            if (check.rows.length > 0) {
-                await pool.query('DELETE FROM reviews WHERE id = $1', [reviewId]);
-                return res.json({ success: true, by: 'author' });
-            }
-        }
+        if (password === "MonCodeSecret123") { await pool.query('DELETE FROM reviews WHERE id = $1', [reviewId]); return res.json({ success: true }); }
+        if (token) { const check = await pool.query('SELECT * FROM reviews WHERE id = $1 AND client_token = $2', [reviewId, token]); if (check.rows.length > 0) { await pool.query('DELETE FROM reviews WHERE id = $1', [reviewId]); return res.json({ success: true }); } }
         res.status(403).json({ error: "Interdit" });
-    } catch (e) { res.status(500).json({ error: "Erreur serveur" }); }
+    } catch (e) { res.status(500).json({ error: "Erreur" }); }
 });
+app.post('/api/track', async (req, res) => { const { type, page, source, device, target } = req.body; try { await pool.query('INSERT INTO analytics (type, page, source, device, target) VALUES ($1, $2, $3, $4, $5)', [type, page, source, device, target]); res.json({ success: true }); } catch (e) { res.json({ success: false }); } });
 
-// --- ROUTES ADMIN STATS ---
-app.post('/api/admin/stats', async (req, res) => {
-    const { password } = req.body;
-    if(password !== "MonCodeSecret123") return res.status(403).json({error: "Accès refusé"});
+// --- NOUVELLE ROUTE SÉCURISÉE : SUIVI PAR CODE ---
+app.post('/api/my-order', async (req, res) => {
+    const { code } = req.body; // On demande le CODE maintenant
+    if(!code) return res.status(400).json({error: "Code de suivi requis"});
     try {
-        const totalVisits = await pool.query("SELECT COUNT(*) FROM analytics WHERE type='view'");
-        const todayVisits = await pool.query("SELECT COUNT(*) FROM analytics WHERE type='view' AND date >= CURRENT_DATE");
-        const devices = await pool.query("SELECT device, COUNT(*) FROM analytics WHERE type='view' GROUP BY device");
-        const clicks = await pool.query("SELECT target, COUNT(*) FROM analytics WHERE type='click' GROUP BY target");
-        const allReviews = await pool.query("SELECT * FROM reviews ORDER BY id DESC");
-
-        res.json({
-            total: totalVisits.rows[0].count,
-            today: todayVisits.rows[0].count,
-            devices: devices.rows,
-            clicks: clicks.rows,
-            reviews: allReviews.rows
-        });
-    } catch (e) { res.status(500).json({error: e}); }
+        // Recherche par tracking_code exact
+        const result = await pool.query(`SELECT client_name, service_type, date, status, tracking_code FROM reservations_v5 WHERE tracking_code = $1 AND payment_status = 'paid'`, [code.toUpperCase()]);
+        if(result.rows.length === 0) return res.status(404).json({error: "Code invalide ou commande non trouvée."});
+        res.json(result.rows[0]);
+    } catch (e) { res.status(500).json({error: "Erreur serveur"}); }
 });
 
-// --- TRACKING & PAIEMENT ---
-app.post('/api/track', async (req, res) => {
-    const { type, page, source, device, target } = req.body;
-    try { await pool.query('INSERT INTO analytics (type, page, source, device, target) VALUES ($1, $2, $3, $4, $5)', [type, page, source, device, target]); res.json({ success: true }); } catch (e) { res.json({ success: false }); }
-});
+// --- ROUTES ADMIN ---
+const CHECK_ADMIN = (req, res, next) => { if(req.body.password === "MonCodeSecret123" || req.query.password === "MonCodeSecret123") next(); else res.status(403).json({error:"Accès refusé"}); };
+app.put('/api/admin/products/:id', CHECK_ADMIN, async (req, res) => { const { price } = req.body; try { await pool.query('UPDATE products SET price = $1 WHERE id = $2', [price, req.params.id]); res.json({success: true}); } catch (e) { res.status(500).json({error: "Erreur"}); } });
+app.post('/api/admin/stats', CHECK_ADMIN, async (req, res) => { try { const t = await pool.query("SELECT COUNT(*) FROM analytics WHERE type='view'"); const td = await pool.query("SELECT COUNT(*) FROM analytics WHERE type='view' AND date >= CURRENT_DATE"); const d = await pool.query("SELECT device, COUNT(*) FROM analytics WHERE type='view' GROUP BY device"); const c = await pool.query("SELECT target, COUNT(*) FROM analytics WHERE type='click' GROUP BY target"); const r = await pool.query("SELECT * FROM reviews ORDER BY id DESC"); res.json({ total: t.rows[0].count, today: td.rows[0].count, devices: d.rows, clicks: c.rows, reviews: r.rows }); } catch (e) { res.status(500).json({error: e}); } });
+app.get('/api/admin/reservations', CHECK_ADMIN, async (req, res) => { try { const r = await pool.query("SELECT id, client_name, email, phone, service_type, date, status, amount_paid, tracking_code FROM reservations_v5 WHERE payment_status='paid' ORDER BY id DESC"); res.json(r.rows); } catch(e) { res.status(500).send(); } });
+app.put('/api/admin/reservations/:id/status', CHECK_ADMIN, async (req, res) => { try { await pool.query("UPDATE reservations_v5 SET status = $1 WHERE id = $2", [req.body.status, req.params.id]); res.json({success:true}); } catch(e) { res.status(500).send(); } });
+
+// --- PAIEMENT STRIPE ---
 app.post('/create-checkout-session', async (req, res) => {
     const { client_name, email, phone, service_type, date, price, payment_choice } = req.body;
     const amountToPay = payment_choice === 'deposit' ? 1500 : price * 100; 
     try {
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card', 'bancontact'],
-            line_items: [{
-                price_data: { currency: 'eur', product_data: { name: `Réparation: ${service_type}` }, unit_amount: amountToPay },
-                quantity: 1,
-            }],
+            line_items: [{ price_data: { currency: 'eur', product_data: { name: `Réparation: ${service_type}` }, unit_amount: amountToPay }, quantity: 1 }],
             mode: 'payment',
             success_url: `${process.env.API_URL || 'https://repair-phone-bx-1.onrender.com'}/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${process.env.API_URL || 'https://repair-phone-bx-1.onrender.com'}/cancel`,
@@ -199,18 +170,37 @@ app.post('/create-checkout-session', async (req, res) => {
 });
 
 app.get('/success', async (req, res) => {
-    // Ta route success originale (raccourcie ici pour loger)
     try {
         const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
         const { client_name, email, phone, service_type, date, total_price, type } = session.metadata;
-        await pool.query(`INSERT INTO reservations_v5 (client_name, email, phone, service_type, date, total_price, amount_paid, payment_status) VALUES ($1, $2, $3, $4, $5, $6, $7, 'paid')`, [client_name, email, phone, service_type, date, total_price, (type==='deposit' ? 15 : total_price)]);
-        res.send(`<html><body><h1 style="color:green;text-align:center;margin-top:50px;">Paiement Réussi ! ✅</h1><p style="text-align:center;">Merci ${client_name}. Retournez au site.</p><div style="text-align:center"><a href="/">Retour au site</a></div></body></html>`);
-    } catch(e) { res.send("Erreur enregistrement."); }
+        
+        // 1. Générer le code de suivi unique
+        const trackingCode = generateTrackingCode();
+
+        // 2. Sauvegarder en DB avec le code
+        await pool.query(`INSERT INTO reservations_v5 (client_name, email, phone, service_type, date, total_price, amount_paid, payment_status, status, tracking_code) VALUES ($1, $2, $3, $4, $5, $6, $7, 'paid', 'pending', $8)`, [client_name, email, phone, service_type, date, total_price, (type==='deposit' ? 15 : total_price), trackingCode]);
+        
+        // 3. TENTATIVE D'ENVOI D'EMAIL AVEC LE CODE (Si configuré plus haut)
+        try {
+            await transporter.sendMail({
+                from: '"Repair Phone BX" <TON_EMAIL@gmail.com>', // Mettre le même email qu'en haut
+                to: email,
+                subject: '✅ Confirmation et Code de Suivi',
+                html: `<h2>Merci ${client_name} !</h2><p>Votre commande est confirmée.</p><p>Voici votre CODE DE SUIVI SECRET pour voir l'avancement :</p><h1 style="color:#ff5c39; background:#eee; padding:10px; display:inline-block;">${trackingCode}</h1><p>Entrez ce code sur notre page de suivi : <a href="https://repair-phone-bx-1.onrender.com/suivi.html">Suivre ma commande</a></p>`
+            });
+        } catch (mailErr) {
+            console.log("Erreur envoi email (normal si pas configuré) :", mailErr.message);
+        }
+
+        // 4. Redirection vers la page de suivi avec le code pré-rempli
+        res.redirect(`/suivi.html?code=${trackingCode}&new=1`);
+    } catch(e) { res.send("Erreur enregistrement. Contactez-nous."); console.error(e); }
 });
 app.get('/cancel', (req, res) => res.redirect('/'));
 
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, '../index.html')); });
 app.get('/admin-secret-dashboard', (req, res) => { res.sendFile(path.join(__dirname, '../admin.html')); });
+app.get('/suivi.html', (req, res) => { res.sendFile(path.join(__dirname, '../suivi.html')); });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, async () => { console.log(`🚀 Serveur prêt sur le port ${PORT}`); await initDB(); });
+app.listen(PORT, async () => { console.log(`🚀 Serveur prêt sur ${PORT}`); await initDB(); });
